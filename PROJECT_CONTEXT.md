@@ -121,7 +121,7 @@ Project thành công khi:
 | Phase | Nội dung | Deadline |
 |---|---|---|
 | Phase 1 | Business Understanding | Done |
-| Phase 2 | EDA + Data Quality | 2 ngày |
+| Phase 2 | EDA + Data Quality | Done |
 | Phase 3 | Data Preparation (SQL) | 1 ngày |
 | Phase 4 | Analysis (hypothesis test, bootstrap, segment) | 3-5 ngày |
 | Phase 5 | Visualization (Python + Power BI) | 2-3 ngày |
@@ -144,7 +144,7 @@ Total: ~2 tuần.
 
 ## 12. Tech Stack
 
-- **SQL:** DuckDB hoặc PostgreSQL (user quyết định ở Phase 2)
+- **SQL:** SQL Server (user quyết định ở Phase 2)
 - **Python:** pandas, numpy, scipy.stats, matplotlib, seaborn
 - **BI:** Power BI Desktop
 - **Notebook:** Jupyter / Colab
