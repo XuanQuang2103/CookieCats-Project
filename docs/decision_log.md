@@ -292,6 +292,48 @@ Chốt 1 layer duy nhất: `cookie_cats.mart_ab_test_base` (đã apply toàn b�
 
 ---
 
+## DEC-09 — Method cho retention hypothesis test (Phase 4, Group 1)
+
+- **Status:** Accepted
+- **Date:** Phase 4
+- **Phase:** 4 (Group 1)
+
+**Context:**
+Cần chốt phương pháp kiểm định H0₁ (D1) và H0₂ (D7) cho biến retention binary, và cách đọc kết quả ở n = 90K nơi mọi thứ dễ statistically significant.
+
+**Decision:**
+Dùng **Chi-square test of independence** (report cả có/không Yates correction) làm test chính, kèm **Cohen's h** (effect size) và **95% CI cho difference of proportions** (Wald), đọc dưới ngưỡng **Bonferroni α = 0.0167** (3 test đồng thời). Đặt effect size và CI **ngang hàng** với p-value khi kết luận.
+
+**Rationale:**
+- retention là binary + version categorical → χ² test of independence đúng bản chất; ở bảng 2×2 tương đương z-test-of-two-proportions (χ² = z²).
+- Ở n lớn, p-value gần như luôn nhỏ → phải dùng effect size + CI để tách statistical vs practical significance. Cohen's h là chuẩn cho difference of proportions.
+- 3 test đồng thời → Bonferroni chống false positive; cost false positive cao (recommendation sản phẩm thật) nên chấp nhận sự conservative.
+
+**Alternatives considered:**
+- t-test 2-sample: sai giả định cho biến Bernoulli, kém chuẩn hơn χ².
+- Chỉ report p-value: nguy hiểm ở n lớn — dễ tuyên bố "significant" cho khác biệt tí hon.
+- Không correction: rủi ro false positive khi chạy nhiều test.
+
+**Tradeoffs:**
+- Đánh đổi: Bonferroni conservative → có thể bỏ sót hiệu ứng thật nhỏ. Chấp nhận vì ưu tiên chắc chắn.
+- Được: kết luận robust, phân biệt rõ "significant" vs "đáng deploy".
+
+**Consequences:**
+- Kết quả G1: D1 **không** bác bỏ H0₁ (p≈0.075, CI chứa 0); D7 **bác bỏ** H0₂ (p≈0.0016 < 0.0167, CI ⊂ (−∞,0)), gate_40 giảm ~4.3% relative.
+- Effect size (Cohen's h ≈ −0.02) rất nhỏ → magnitude/user bé, nhưng ở scale lớn vẫn đáng tiền → nối sang G4.
+- Method này áp cho mọi so sánh proportion downstream (kể cả segment G3).
+
+---
+
+## DEC-10 — (placeholder) Method cho engagement test — chốt khi hoàn thành Group 2
+
+- **Status:** Under review
+- **Phase:** 4 (Group 2)
+
+**Dự kiến:** Mann-Whitney U (non-parametric, vì `sum_gamerounds` right-skewed) + bootstrap 10,000-resample cho 95% CI của median difference, seed = 42, đọc dưới Bonferroni 0.0167. Checkpoint sơ bộ: median 17 vs 16, p≈0.051 (không significant), bootstrap CI median diff ≈ [−1, 0] (chứa 0). Sẽ chuyển sang `Accepted` và ghi kết quả cuối khi notebook G2 chạy xong.
+
+---
+
 ## Ghi chú
 
 - File này sẽ tiếp tục được cập nhật ở Phase 4-7 với các decisions mới (VD threshold cho hypothesis test, choice giữa parametric vs bootstrap, business impact estimation methodology).
