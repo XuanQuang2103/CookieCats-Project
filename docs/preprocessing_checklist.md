@@ -139,8 +139,8 @@ Thực hiện qua `sql/03_validation_queries.sql`.
 | # | Artifact | Location | Status |
 |---|---|---|---|
 | DOC-1 | `preprocessing_checklist.md` | `docs/` | ✅ (this file) |
-| DOC-2 | `data_dictionary.md` cho `mart_ab_test_base` | `docs/` | ⏳ Pending |
-| DOC-3 | `decision_log.md` — log các quyết định policy xuyên project | `docs/` | ⏳ Pending |
+| DOC-2 | `data_dictionary.md` cho `mart_ab_test_base` | `docs/` | ✅ Executed |
+| DOC-3 | `decision_log.md` — log các quyết định policy xuyên project | `docs/` | ✅ Executed |
 | DOC-4 | `01_metadata_setup.sql` (Bước 2) | `sql/` | ✅ Executed |
 | DOC-5 | `02_build_mart_ab_test_base.sql` (Bước 3) | `sql/` | ✅ Executed |
 | DOC-6 | `03_validation_queries.sql` | `sql/` | ✅ Executed |
@@ -151,10 +151,10 @@ Thực hiện qua `sql/03_validation_queries.sql`.
 Không sang Phase 4 cho đến khi:
 
 - [x] Tất cả VAL-1 → VAL-8 status = ✅ PASS
-- [ ] Data dictionary (DOC-2) hoàn thành
-- [ ] Decision log (DOC-3) hoàn thành
-- [ ] Section 2.4 (Actual) đã fill số cụ thể (tùy chọn nhưng khuyến nghị)
-- [ ] Bản checklist này commit vào repo
+- [x] Data dictionary (DOC-2) hoàn thành
+- [x] Decision log (DOC-3) hoàn thành
+- [x] Section 2.4 (Actual) đã fill số cụ thể (tùy chọn nhưng khuyến nghị)
+- [x] Bản checklist này commit vào repo
 
 **Approver:** Xuân Quang
 **Sign-off date:** 2026-08-07
