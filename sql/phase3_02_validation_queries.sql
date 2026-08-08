@@ -87,10 +87,10 @@ SELECT
     n_total,
     CAST(n30 AS FLOAT) / n_total                    AS ratio_30,
     CAST(n40 AS FLOAT) / n_total                    AS ratio_40,
-    2.0 * POWER(n30 - n40, 2) / (n_total * 1.0)     AS chi_square,
+    POWER(CAST(n30 - n40 AS FLOAT), 2) / (n_total * 1.0)    AS chi_square,
     -- chi² critical values (df=1): 0.05 -> 3.841 | 0.01 -> 6.635 | 0.001 -> 10.828
     CASE
-        WHEN 2.0 * POWER(n30 - n40, 2) / (n_total * 1.0) < 10.828 THEN 'PASS (p >= 0.001)'
+        WHEN POWER(CAST(n30 - n40 AS FLOAT), 2) / (n_total * 1.0) < 10.828 THEN 'PASS (p >= 0.001)'
         ELSE 'FAIL - potential SRM'
     END AS verdict
 FROM counts;

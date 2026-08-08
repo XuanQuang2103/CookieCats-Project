@@ -4,7 +4,7 @@
 **Purpose:** Log các quyết định major xuyên project với rationale. Đây là "lịch sử tư duy" — 3 tháng sau đọc lại vẫn hiểu tại sao chọn cách này thay vì cách khác.
 **Format:** Architectural Decision Record (ADR) simplified.
 **Owner:** Xuân Quang
-**Last updated:** 2026-08-07
+**Last updated:** 2026-08-08 (Phase 7 — Delivery & Documentation)
 
 ---
 
@@ -325,12 +325,117 @@ Dùng **Chi-square test of independence** (report cả có/không Yates correcti
 
 ---
 
-## DEC-10 — (placeholder) Method cho engagement test — chốt khi hoàn thành Group 2
+## DEC-10 — Method cho engagement test (Phase 4, Group 2)
 
-- **Status:** Under review
+- **Status:** Accepted
+- **Date:** Phase 4
 - **Phase:** 4 (Group 2)
 
-**Dự kiến:** Mann-Whitney U (non-parametric, vì `sum_gamerounds` right-skewed) + bootstrap 10,000-resample cho 95% CI của median difference, seed = 42, đọc dưới Bonferroni 0.0167. Checkpoint sơ bộ: median 17 vs 16, p≈0.051 (không significant), bootstrap CI median diff ≈ [−1, 0] (chứa 0). Sẽ chuyển sang `Accepted` và ghi kết quả cuối khi notebook G2 chạy xong.
+**Context:**
+`sum_gamerounds` lệch phải mạnh (median ~16-17 nhưng mean ~51 do đuôi dài), nên t-test/mean-based không phù hợp. Cần chốt method kiểm định H0₃ và cách lấy CI cho khác biệt median.
+
+**Decision:**
+Dùng **Mann-Whitney U** (non-parametric, phù hợp phân phối lệch) làm test chính, effect size **rank-biserial**, và **bootstrap 10,000-resample** (seed = 42) cho 95% CI của median difference. Đọc dưới Bonferroni α = 0.0167.
+
+**Rationale:**
+- Median + non-parametric robust với right-skew, không bị outlier đuôi kéo.
+- Bootstrap cho CI của median difference mà không cần giả định phân phối.
+- Seed cố định (42) đảm bảo reproducibility.
+
+**Alternatives considered:**
+- t-test 2-sample trên mean: sai giả định với phân phối lệch, mean bị outlier chi phối.
+- Log-transform rồi t-test: khó diễn giải business (đơn vị log-rounds).
+
+**Tradeoffs:**
+- Đánh đổi: median ít "nhạy" hơn mean với dịch chuyển đuôi. Chấp nhận vì engagement điển hình đọc theo median.
+- Được: kết luận robust, CI không phụ thuộc giả định normal.
+
+**Consequences:**
+- Kết quả G2: median 17 (gate_30) vs 16 (gate_40); Mann-Whitney p ≈ 0.0509; rank-biserial r ≈ −0.0075 (cực nhỏ); bootstrap CI median diff = [−1.00; 0.00] **chứa 0** → **không** bác bỏ H0₃. Engagement hai nhóm thực chất bằng nhau.
+- Kết luận này là mấu chốt của recommendation: gate_40 không có upside engagement để bù cho retention D7 bị mất.
+
+---
+
+## DEC-11 — Segment analysis (HTE) theo engagement bucket & lưu ý số heavy
+
+- **Status:** Accepted (with open item)
+- **Date:** Phase 4 (Group 3)
+- **Phase:** 4 (Group 3)
+
+**Context:**
+Hiệu ứng D7 trung bình (−0.82pp) có thể che giấu heterogeneity. Cần kiểm tra tác động có đồng đều giữa light/medium/heavy không (Heterogeneous Treatment Effect).
+
+**Decision:**
+Chạy chi-square retention D7 trong từng nhóm engagement (dùng bucket chung từ DEC-04), đọc theo **pattern** (hướng + độ lớn + đơn điệu) thay vì tuyên bố cứng từng ô — vì cỡ mẫu mỗi nhóm nhỏ hơn, p-value từng ô kém ổn định.
+
+**Rationale:**
+- Segment insight là thứ Game Designer cần nhất; pattern đơn điệu có giá trị hơn p-value lẻ.
+- Đọc theo pattern tránh over-claim ở từng ô cỡ mẫu nhỏ.
+
+**Consequences:**
+- Kết quả: light +0.11pp (p=0.44) → gần như không đổi; medium −0.63pp (p=0.043); heavy −1.27pp (p=0.029). Pattern đơn điệu light→medium→heavy khớp cơ chế: người chơi light rời trước khi chạm gate; medium/heavy mới chịu tác động comeback-habit.
+- **Open item (cần đối chiếu):** Biểu đồ `phase4_g3_segment_d7.png` hiển thị nhãn heavy 47.2% vs 46.4% (≈ −0.8pp), lệch so với con số −1.27pp trong text. Chênh quá xa để chỉ do làm tròn → nghi khác biệt định nghĩa bucket heavy giữa chart và phần tính delta. Hướng và thứ tự vẫn đúng, không đổi kết luận, nhưng cần đối chiếu lại `notebook phase4_03_segment_analysis` để chốt con số heavy chuẩn trước khi phát hành ra ngoài. Xuân Quang đã quyết định giữ nguyên và ghi nhận ở Phase 7 (không block delivery).
+
+---
+
+## DEC-12 — Business impact bằng proxy retention D7 + benchmark ARPDAU
+
+- **Status:** Accepted
+- **Date:** Phase 4 (Group 4), reconfirmed Phase 6
+- **Phase:** 4 → 6
+
+**Context:**
+Dataset không chứa doanh thu (ngoài scope), nhưng success criteria yêu cầu business impact bằng con số. Cần một cách quy retention delta ra tiền mà minh bạch và defensible.
+
+**Decision:**
+Dùng retention D7 làm **proxy** cho stickiness/LTV. Quy đổi: Số user D7 mất/tháng = Installs × |ΔD7|; giá trị mỗi user = **LTV proxy = ARPDAU × số ngày hoạt động ước tính**. Ở Phase 4 để ARPDAU dưới dạng **tham số**; ở Phase 6 chốt **benchmark ARPDAU = $0.10** (puzzle casual) và LTV proxy ≈ $3.00/user (≈ 30 ngày hoạt động), chạy bảng sensitivity theo quy mô traffic.
+
+**Rationale:**
+- Không có revenue thật → phải dùng proxy; retention D7 là proxy stickiness chuẩn ngành.
+- Để ARPDAU là tham số giúp đội ngũ thay số thật vào; benchmark $0.10 chỉ để minh họa con số cho case study học tập.
+- Minh bạch giả định > giả vờ chính xác.
+
+**Alternatives considered:**
+- Không quy ra tiền, chỉ report % : đúng nhưng không đáp ứng success criteria "impact bằng số".
+- Mô hình LTV đầy đủ: bất khả thi vì chỉ có D1/D7, không có đường cong retention dài hạn.
+
+**Tradeoffs:**
+- Đánh đổi: con số USD là illustrative, không phải đo trực tiếp — phải kèm caveat rõ.
+- Được: stakeholder phi kỹ thuật có "cảm giác" về độ lớn tác động.
+
+**Consequences:**
+- Con số chốt (ARPDAU $0.10): ~818 user D7 mất/tháng trên mỗi 100K installs ≈ $2,454/tháng ≈ $29,448/năm, tuyến tính theo traffic.
+- Mọi deliverable phải ghi rõ đây là proxy dựa trên benchmark, không phải doanh thu đo trực tiếp.
+
+---
+
+## DEC-13 — Bỏ Power BI dashboard (Phase 5), report thay thế
+
+- **Status:** Accepted
+- **Date:** Phase 7 (chốt lại scope Phase 5)
+- **Phase:** 5 → 7
+
+**Context:**
+Roadmap ban đầu có Phase 5 build Power BI dashboard cho Product team. Tuy nhiên đây là A/B test **đã kết thúc trên dữ liệu tĩnh** — số liệu sẽ không được cập nhật trong tương lai.
+
+**Decision:**
+Không build dashboard `.pbix`. Dùng report Word (Phase 4 + Phase 6) và executive 1-slide làm deliverable trực quan thay thế.
+
+**Rationale:**
+- Dashboard tạo giá trị khi data được refresh định kỳ và cần theo dõi liên tục. Với dữ liệu tĩnh đã đóng, dashboard là overhead thừa — không ai "monitor" một thử nghiệm đã xong.
+- Report tĩnh (charts nhúng + diễn giải) truyền tải đủ insight cho mọi stakeholder trong case study này.
+
+**Alternatives considered:**
+- Build dashboard cho có: tốn công, không tạo giá trị theo dõi thực.
+- HTML mockup dashboard: cân nhắc nhưng report đã đủ, tránh trùng lặp.
+
+**Tradeoffs:**
+- Đánh đổi: mất phần trình diễn interactive; thiếu 1 deliverable "đẹp mắt" cho portfolio.
+- Được: tập trung công sức vào chất lượng report + recommendation.
+
+**Consequences:**
+- Deliverables cuối gồm: SQL scripts, notebooks (Phase 2, 4), reports Word (Phase 2/3/4/6), project closeout doc, executive 1-slide (HTML). Không có `.pbix`.
+- Nếu sau này có phiên bản A/B test live (data refresh), cân nhắc build dashboard lúc đó.
 
 ---
 

@@ -69,14 +69,45 @@ DB_TRUSTED_CONNECTION=yes
 
 ## Roadmap (CRISP-DM)
 
-| Phase | Nội dung |
-|---|---|
-| 1 | Business Understanding |
-| 2 | EDA + Data Quality (SRM check, outlier, distribution) |
-| 3 | Data Preparation (SQL) |
-| 4 | Analysis (hypothesis test, bootstrap, segment) |
-| 5 | Visualization (Python + Power BI) |
-| 6 | Insights & Recommendation |
-| 7 | Delivery & Documentation |
+| Phase | Nội dung | Trạng thái |
+|---|---|---|
+| 1 | Business Understanding | ✅ Done |
+| 2 | EDA + Data Quality (SRM check, outlier, distribution) | ✅ Done |
+| 3 | Data Preparation (SQL) | ✅ Done |
+| 4 | Analysis (hypothesis test, bootstrap, segment) | ✅ Done |
+| 5 | Visualization | ⏭️ Bỏ Power BI dashboard (dữ liệu tĩnh — xem DEC-13); report thay thế |
+| 6 | Insights & Recommendation | ✅ Done |
+| 7 | Delivery & Documentation | ✅ Done |
 
-Xem [`PROJECT_CONTEXT.md`](PROJECT_CONTEXT.md) để biết chi tiết scope, assumptions, stakeholder mapping và glossary thuật ngữ chuẩn ngành.
+## Kết luận & Recommendation
+
+> **NO-GO — giữ nguyên gate tại level 30, không triển khai gate 40** (độ tin cậy > 95%).
+
+Ba trụ bằng chứng: (1) retention **D7 giảm 0,82pp (−4,3%)**, có ý nghĩa thống kê vượt cả ngưỡng Bonferroni (p = 0,0016); (2) **engagement bằng nhau** (p = 0,051, bootstrap CI chứa 0) — không có upside để đánh đổi; (3) tác hại tập trung ở nhóm **medium/heavy** (core user), nhóm light gần như không đổi. Tác động kinh doanh proxy (ARPDAU benchmark $0,10): **~818 user D7 mất/tháng trên mỗi 100K installs ≈ $2.454/tháng ≈ $29.448/năm**, tuyến tính theo traffic.
+
+## Deliverables
+
+| Loại | File |
+|---|---|
+| SQL scripts (idempotent) | `sql/phase3_00_create_metadata.sql`, `sql/phase3_01_build_mart_ab_test_base.sql`, `sql/phase3_02_validation_queries.sql` |
+| Notebooks — EDA | `notebooks/phase2_00` → `phase2_04` |
+| Notebooks — Analysis | `notebooks/phase4_01_retention` · `phase4_02_Engagement` · `phase4_03_segment` · `phase4_04_business_impact` |
+| Report Word — EDA / Data Prep | `reports/CookieCats_Phase2_EDA_Data_Quality_Report.docx`, `reports/CookieCats_Phase3_DataPrepare_Report.docx` |
+| Report Word — Analysis | `reports/CookieCats_Phase4_Hypothesis_Testing_Report.docx` |
+| Report Word — Insights & Recommendation | `reports/CookieCats_Phase6_Insights_Recommend_Report.docx` |
+| Project closeout doc | `reports/CookieCats_Phase7_Closeout-Report.docx` |
+| Executive 1-slide (Go/No-Go) | `reports/CookieCats_Executive_Summary.html` |
+| Decision log (14 ADR) | `docs/decision_log.md` |
+| Data dictionary · Preprocessing checklist | `docs/data_dictionary.md`, `docs/preprocessing_checklist.md` |
+
+## Reproducibility
+
+1. Tạo virtualenv và `pip install -r requirements.txt` (lưu ý: versions dùng `>=`, chưa pin cứng — pin lại nếu cần bản build cố định).
+2. Tải `cookie_cats.csv` từ Kaggle, đặt vào `data/` (file bị gitignore, không commit).
+3. Load CSV vào SQL Server bảng `dbo.raw_ab_test` (⚠️ hiện chưa có script tự động cho bước load raw này — thực hiện thủ công qua Import Wizard hoặc `BULK INSERT`).
+4. Chạy SQL theo thứ tự: `phase3_00` → `phase3_01` → `phase3_02` để dựng `cookie_cats.mart_ab_test_base`.
+5. Cấu hình `.env` (xem mẫu bên dưới) rồi chạy notebooks theo thứ tự phase.
+
+> **Ghi chú dọn dẹp:** notebook `phase4_02_Engagement.ipynb` viết hoa chữ E, lệch convention lowercase của các file khác (minor). Bước load raw CSV → `dbo.raw_ab_test` hiện làm thủ công, chưa có script tự động.
+
+Xem [`PROJECT_CONTEXT.md`](PROJECT_CONTEXT.md) để biết chi tiết scope, assumptions, stakeholder mapping và glossary thuật ngữ chuẩn ngành; [`docs/decision_log.md`](docs/decision_log.md) để biết lịch sử các quyết định (14 ADR).

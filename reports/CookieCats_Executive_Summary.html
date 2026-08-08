@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cookie Cats A/B Test — Executive Summary</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Roboto:ital,wght@0,300;0,400;0,500;0,700;0,900;1,400&family=Roboto+Mono:wght@500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#F4F6F9;
+    --ink:#2B3240;
+    --muted:#6B7280;
+    --accent:#3F5A8A;
+    --accent-soft:#EAF0F8;
+    --nogo:#B4534A;
+    --card:#FFFFFF;
+    --border:#E3E8EF;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  html,body{background:var(--bg);font-family:'Roboto',-apple-system,Segoe UI,sans-serif;color:var(--ink);}
+  body{display:flex;justify-content:center;align-items:flex-start;padding:28px 20px;}
+
+  .slide{
+    width:100%;max-width:1180px;aspect-ratio:16/9;background:var(--bg);
+    border-radius:16px;padding:38px 42px;display:flex;flex-direction:column;
+    box-shadow:0 8px 30px rgba(43,50,64,.10);border:1px solid var(--border);
+  }
+
+  /* header */
+  .hd h1{font-size:30px;font-weight:700;letter-spacing:-.3px;}
+  .hd .sub{font-size:14px;color:var(--muted);font-weight:400;margin-top:5px;}
+
+  /* main grid */
+  .main{display:grid;grid-template-columns:300px 1fr;gap:18px;margin-top:22px;flex:1;}
+
+  /* NO-GO panel */
+  .nogo{
+    background:var(--card);border:1px solid var(--border);border-radius:14px;
+    padding:24px 24px;display:flex;flex-direction:column;justify-content:center;
+  }
+  .nogo .label{font-size:13px;font-weight:500;letter-spacing:2px;color:var(--accent);text-transform:uppercase;}
+  .nogo .big{font-size:76px;font-weight:900;line-height:1;color:var(--nogo);margin:10px 0 16px;letter-spacing:-1px;}
+  .nogo .desc{font-size:16px;font-weight:400;line-height:1.35;color:var(--ink);}
+  .nogo .conf{margin-top:auto;padding-top:18px;font-size:14px;font-style:italic;color:var(--accent);}
+
+  /* evidence cards */
+  .cards{display:flex;flex-direction:column;gap:12px;}
+  .card{
+    background:var(--card);border:1px solid var(--border);border-radius:12px;
+    padding:14px 20px;flex:1;display:flex;flex-direction:column;justify-content:center;
+  }
+  .card .h{font-size:17px;font-weight:700;color:var(--ink);}
+  .card .h .down{color:var(--nogo);font-weight:700;}
+  .card .b{font-size:13.5px;font-weight:400;color:var(--muted);margin-top:5px;line-height:1.35;}
+  .card .b b{color:var(--accent);font-weight:500;}
+
+  /* impact band */
+  .impact{
+    margin-top:18px;background:var(--accent-soft);border:1px solid #D6E0F0;border-radius:12px;
+    padding:16px 24px;display:flex;align-items:center;gap:26px;
+  }
+  .impact .num{font-size:30px;font-weight:900;color:var(--accent);white-space:nowrap;letter-spacing:-.5px;}
+  .impact .num small{display:block;font-size:12px;font-weight:400;color:var(--muted);letter-spacing:0;margin-top:2px;}
+  .impact .txt{font-size:13px;line-height:1.4;color:var(--ink);}
+  .impact .txt b{font-weight:700;}
+
+  /* footer */
+  .ft{margin-top:16px;font-size:11px;color:var(--muted);font-family:'Roboto Mono',monospace;}
+
+  @media print{
+    body{padding:0;background:#fff;}
+    .slide{box-shadow:none;border:none;max-width:none;}
+  }
+</style>
+</head>
+<body>
+  <div class="slide">
+    <div class="hd">
+      <h1>Cookie Cats A/B Test — Khuyến nghị Go/No-Go</h1>
+      <div class="sub">Dời progression gate 30 → 40 · 90.188 users · 14 ngày đầu · CRISP-DM Phase 6</div>
+    </div>
+
+    <div class="main">
+      <div class="nogo">
+        <div class="label">Khuyến nghị</div>
+        <div class="big">NO-GO</div>
+        <div class="desc">Giữ nguyên gate tại level 30. Không triển khai gate 40.</div>
+        <div class="conf">Độ tin cậy &gt; 95%</div>
+      </div>
+
+      <div class="cards">
+        <div class="card">
+          <div class="h">Retention D7 giảm <span class="down"> −0,82pp (−4,3%)</span></div>
+          <div class="b"><b>p = 0,0016</b> · có ý nghĩa thống kê, vượt ngưỡng Bonferroni → gate_40 làm giảm người quay lại ngày 7.</div>
+        </div>
+        <div class="card">
+          <div class="h">Engagement: hai nhóm bằng nhau</div>
+          <div class="b">median 17 vs 16 rounds · <b>p = 0,051</b> · bootstrap CI chứa 0 → không có upside nào để đánh đổi.</div>
+        </div>
+        <div class="card">
+          <div class="h">Tác hại rơi đúng nhóm core user</div>
+          <div class="b">medium −0,63pp, heavy −1,27pp; light gần như không đổi → dời gate phá comeback-habit của người chơi giá trị.</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="impact">
+      <div class="num">≈ $2.454<small>mỗi tháng / 100K installs</small></div>
+      <div class="txt"><b>Tác động kinh doanh</b> (proxy, benchmark ARPDAU $0,10): ~818 user D7 mất/tháng trên mỗi 100K installs ≈ $2.454/tháng ≈ $29.448/năm — tuyến tính theo traffic. Retention D7 dùng làm proxy stickiness/LTV, không phải doanh thu đo trực tiếp.</div>
+    </div>
+
+    <div class="ft">Nguồn: cookie_cats.mart_ab_test_base (90.188 users, 14 ngày) · Xuân Quang · 08/08/2026</div>
+  </div>
+</body>
+</html>

@@ -2,22 +2,7 @@
 
 Đây là project instructions cho Claude. Mọi conversation trong Project này đều dùng context bên dưới.
 
----
-
-## 1. Vai trò của Claude
-
-Claude đóng vai **Senior Data Analyst chuyên domain Mobile Game** (5+ năm kinh nghiệm F2P puzzle/casual game). Nhiệm vụ: hướng dẫn user phân tích dataset Cookie Cats theo đúng chuẩn quy trình corporate (CRISP-DM), không phải kiểu tutorial Kaggle rời rạc. Trả lời bằng tiếng Việt (giữ nguyên thuật ngữ tiếng Anh chuẩn ngành).
-
-Nguyên tắc làm việc:
-- Ưu tiên business insight hơn là technical showoff
-- Luôn phân biệt statistical significance vs practical significance
-- Không bỏ qua data quality check trước khi phân tích
-- Recommendation phải kèm business impact bằng con số cụ thể
-- Challenge user khi thấy logic phân tích lỏng lẻo, không gật đầu cho qua
-
----
-
-## 2. Bối cảnh & Lý do phân tích
+## 1. Bối cảnh & Lý do phân tích
 
 **Cookie Cats** là mobile puzzle game (match-3) của Tactile Entertainment. Dataset capture một A/B test có thật:
 - **gate_30 (control):** Gate chặn tại level 30
@@ -32,7 +17,7 @@ Nguyên tắc làm việc:
 
 ---
 
-## 3. Mục tiêu
+## 2. Mục tiêu
 
 **Primary:** Đánh giá tác động dời gate 30→40 lên retention D1 và D7 với statistical significance rõ ràng → recommendation Go/No-Go cho Product team.
 
@@ -43,12 +28,11 @@ Nguyên tắc làm việc:
 
 **Deliverables cuối:**
 - Report Word/PDF cho stakeholder non-technical
-- Dashboard Power BI cho Product team
 - Notebook Python + SQL scripts tái sử dụng được
 
 ---
 
-## 4. Hypothesis chính thức
+## 3. Hypothesis chính thức
 
 - **H0₁:** Retention_D1(gate_30) = Retention_D1(gate_40)
 - **H0₂:** Retention_D7(gate_30) = Retention_D7(gate_40)
@@ -60,7 +44,7 @@ Nguyên tắc làm việc:
 
 ---
 
-## 5. Stakeholder Mapping
+## 4. Stakeholder Mapping
 
 | Stakeholder | Quan tâm gì | Format phù hợp |
 |---|---|---|
@@ -71,7 +55,7 @@ Nguyên tắc làm việc:
 
 ---
 
-## 6. Success Criteria (cho project, không phải cho A/B test)
+## 5. Success Criteria (cho project, không phải cho A/B test)
 
 Project thành công khi:
 - Có recommendation Go/No-Go rõ ràng với confidence >95%
@@ -81,7 +65,7 @@ Project thành công khi:
 
 ---
 
-## 7. Scope
+## 6. Scope
 
 **IN scope:**
 - Retention D1, D7
@@ -97,7 +81,7 @@ Project thành công khi:
 
 ---
 
-## 8. Assumptions & Limitations
+## 7. Assumptions & Limitations
 
 - Random assignment giữa 2 nhóm là valid → **sẽ verify bằng SRM check ở Phase 2**
 - Dữ liệu chỉ cover 14 ngày đầu → không kết luận được long-term impact
@@ -107,7 +91,7 @@ Project thành công khi:
 
 ---
 
-## 9. Risks
+## 8. Risks
 
 - **Data risk:** Outlier user 49,854 rounds trong 14 ngày — khả năng cao là bot/emulator, cần quyết định xử lý
 - **Statistical risk:** Multiple testing (3 metric) → cần correction
@@ -116,23 +100,23 @@ Project thành công khi:
 
 ---
 
-## 10. Timeline
+## 9. Timeline
 
 | Phase | Nội dung | Deadline |
 |---|---|---|
 | Phase 1 | Business Understanding | Done |
 | Phase 2 | EDA + Data Quality | Done |
-| Phase 3 | Data Preparation (SQL) | 1 ngày |
-| Phase 4 | Analysis (hypothesis test, bootstrap, segment) | 3-5 ngày |
-| Phase 5 | Visualization (Python + Power BI) | 2-3 ngày |
-| Phase 6 | Insights & Recommendation | 1-2 ngày |
-| Phase 7 | Delivery & Documentation | 1 ngày |
+| Phase 3 | Data Preparation (SQL) | Done |
+| Phase 4 | Analysis (hypothesis test, bootstrap, segment) | Done |
+| Phase 5 | Visualization (Python) | Done |
+| Phase 6 | Insights & Recommendation | Done |
+| Phase 7 | Delivery & Documentation | Done |
 
-Total: ~2 tuần.
+Total: ~5 ngày.
 
 ---
 
-## 11. Data Source
+## 10. Data Source
 
 - **Source:** Kaggle dataset "Mobile Games A/B Testing - Cookie Cats"
 - **Origin:** Public dataset từ Tactile Entertainment via DataCamp
@@ -142,7 +126,7 @@ Total: ~2 tuần.
 
 ---
 
-## 12. Tech Stack
+## 11. Tech Stack
 
 - **SQL:** SQL Server (user quyết định ở Phase 2)
 - **Python:** pandas, numpy, scipy.stats, matplotlib, seaborn
@@ -152,7 +136,7 @@ Total: ~2 tuần.
 
 ---
 
-## 13. Glossary — Thuật ngữ chuẩn ngành
+## 12. Glossary — Thuật ngữ chuẩn ngành
 
 ### Retention Metrics
 - **Retention D_n:** Tỷ lệ user quay lại vào ngày thứ n sau install. `= Users_return_day_n / Users_install`
@@ -200,7 +184,7 @@ Total: ~2 tuần.
 
 ---
 
-## 14. Nguyên tắc phản hồi của Claude trong project này
+## 13. Nguyên tắc phản hồi của Claude trong project này
 
 1. **Luôn check Phase hiện tại** trước khi trả lời — không nhảy phase
 2. **Format response:** business context trước, technical detail sau
@@ -210,5 +194,4 @@ Total: ~2 tuần.
 6. **Deliverable format mặc định:**
    - Report cuối: .docx (Times New Roman 13pt)
    - Slide: HTML với Chart.js hoặc PPTX
-   - Dashboard: Power BI (.pbix)
    - Code: Jupyter Notebook có markdown giải thích
