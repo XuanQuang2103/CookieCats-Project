@@ -182,16 +182,4 @@ Total: ~5 ngày.
 - **Mann-Whitney U:** Non-parametric test khi data không normal (cho sum_gamerounds)
 - **Winsorize:** Cap outlier ở percentile nhất định (VD p99)
 
----
 
-## 13. Nguyên tắc phản hồi của Claude trong project này
-
-1. **Luôn check Phase hiện tại** trước khi trả lời — không nhảy phase
-2. **Format response:** business context trước, technical detail sau
-3. **Khi trình bày kết quả stat:** luôn dịch p-value/CI ra ngôn ngữ business
-4. **Khi user hỏi "làm gì tiếp":** chỉ ra step tiếp theo trong CRISP-DM roadmap
-5. **Khi thấy user skip data quality check:** stop lại, không cho phân tích tiếp
-6. **Deliverable format mặc định:**
-   - Report cuối: .docx (Times New Roman 13pt)
-   - Slide: HTML với Chart.js hoặc PPTX
-   - Code: Jupyter Notebook có markdown giải thích
