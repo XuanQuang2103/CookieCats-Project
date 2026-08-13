@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="vi">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -78,40 +78,40 @@
 <body>
   <div class="slide">
     <div class="hd">
-      <h1>Cookie Cats A/B Test — Go/No-Go Recommendation</h1>
-      <div class="sub">Moving the progression gate 30 → 40 · 90,188 users · first 14 days · CRISP-DM Phase 6</div>
+      <h1>Cookie Cats A/B Test — Khuyến nghị Go/No-Go</h1>
+      <div class="sub">Dời progression gate 30 → 40 · 90.188 users · 14 ngày đầu · CRISP-DM Phase 6</div>
     </div>
 
     <div class="main">
       <div class="nogo">
-        <div class="label">Recommendation</div>
+        <div class="label">Khuyến nghị</div>
         <div class="big">NO-GO</div>
-        <div class="desc">Keep the gate at level 30. Do not roll out gate 40.</div>
-        <div class="conf">Confidence &gt; 95%</div>
+        <div class="desc">Giữ nguyên gate tại level 30. Không triển khai gate 40.</div>
+        <div class="conf">Độ tin cậy &gt; 95%</div>
       </div>
 
       <div class="cards">
         <div class="card">
-          <div class="h">D7 retention drops <span class="down"> −0.82pp (−4.3%)</span></div>
-          <div class="b"><b>p = 0.0016</b> · statistically significant, beyond the Bonferroni threshold → gate_40 reduces day-7 returning users.</div>
+          <div class="h">Retention D7 giảm <span class="down"> −0,82pp (−4,3%)</span></div>
+          <div class="b"><b>p = 0,0016</b> · có ý nghĩa thống kê, vượt ngưỡng Bonferroni → gate_40 làm giảm người quay lại ngày 7.</div>
         </div>
         <div class="card">
-          <div class="h">Engagement: the two groups are equal</div>
-          <div class="b">median 17 vs 16 rounds · <b>p = 0.051</b> · bootstrap CI contains 0 → no upside to trade for.</div>
+          <div class="h">Engagement: hai nhóm bằng nhau</div>
+          <div class="b">median 17 vs 16 rounds · <b>p = 0,051</b> · bootstrap CI chứa 0 → không có upside nào để đánh đổi.</div>
         </div>
         <div class="card">
-          <div class="h">The harm hits exactly the core-user group</div>
-          <div class="b">medium −0.63pp, heavy −1.27pp; light virtually unchanged → moving the gate breaks the comeback-habit of valuable players.</div>
+          <div class="h">Tác hại rơi đúng nhóm core user</div>
+          <div class="b">medium −0,63pp, heavy −1,27pp; light gần như không đổi → dời gate phá comeback-habit của người chơi giá trị.</div>
         </div>
       </div>
     </div>
 
     <div class="impact">
-      <div class="num">≈ $2,454<small>per month / 100K installs</small></div>
-      <div class="txt"><b>Business impact</b> (proxy, ARPDAU benchmark $0.10): ~818 D7 users lost/month per 100K installs ≈ $2,454/month ≈ $29,448/year — linear with traffic. D7 retention is used as a stickiness/LTV proxy, not directly measured revenue.</div>
+      <div class="num">≈ $2.454<small>mỗi tháng / 100K installs</small></div>
+      <div class="txt"><b>Tác động kinh doanh</b> (proxy, benchmark ARPDAU $0,10): ~818 user D7 mất/tháng trên mỗi 100K installs ≈ $2.454/tháng ≈ $29.448/năm — tuyến tính theo traffic. Retention D7 dùng làm proxy stickiness/LTV, không phải doanh thu đo trực tiếp.</div>
     </div>
 
-    <div class="ft">Source: cookie_cats.mart_ab_test_base (90,188 users, 14 days) · Xuân Quang · 08/08/2026</div>
+    <div class="ft">Nguồn: cookie_cats.mart_ab_test_base (90.188 users, 14 ngày) · Xuân Quang · 08/08/2026</div>
   </div>
 </body>
 </html>

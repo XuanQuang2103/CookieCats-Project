@@ -1,113 +1,148 @@
-# Cookie Cats — Mobile Game A/B Testing Project
+# Cookie Cats — Mobile Game A/B Testing
 
-Phân tích A/B test cho tựa game puzzle **Cookie Cats** (Tactile Entertainment): đánh giá tác động của việc **dời progression gate từ level 30 sang level 40** lên retention và engagement của người chơi, theo quy trình chuẩn corporate **CRISP-DM**.
+**English** · [Tiếng Việt](README.vi.md)
 
-## Business Question
+A/B test analysis for the puzzle game **Cookie Cats** (Tactile Entertainment): does **moving the progression gate from level 30 to level 40** improve player retention and engagement? Run end to end on the **CRISP-DM** process, from business framing to a Go/No-Go recommendation.
 
-> Việc dời gate 30 → 40 có làm **player retention** (D1, D7) và **engagement** tốt hơn không? → Recommendation **Go / No-Go** cho Product team.
+---
+
+## Recommendation: NO-GO — keep the gate at level 30
+
+> Do not roll out gate 40. Confidence > 95%, three independent lines of evidence.
+
+| Evidence | Result |
+|---|---|
+| **Day-7 retention** | **−0.82pp (−4.3%)**, χ² with Yates correction, **p = 0.0016** — significant even against the Bonferroni threshold α = 0.0167 |
+| **Engagement** | **No difference** — median 17 vs 16 rounds, Mann-Whitney **p = 0.051**, bootstrap 95% CI of the median difference contains 0 → no upside to trade the retention loss for |
+| **Business impact** | **≈ 818 D7 users lost/month per 100K installs ≈ $2,454/month ≈ $29,448/year** (proxy at ARPDAU $0.10, linear with traffic) |
+
+The damage is concentrated in **medium and heavy players** (−0.63pp and −1.27pp on D7) — the segment that actually generates value — while light players are unaffected (+0.11pp). Moving the gate later breaks the return habit of exactly the players worth keeping.
+
+📄 **One-page executive summary:** [PDF](reports/CookieCats_Executive_Summary.pdf) · [HTML](https://xuanquang2103.github.io/CookieCats-Project/reports/CookieCats_Executive_Summary.html)
+
+---
+
+## The three charts that carry the argument
+
+**1. Retention by test group** — D1 is a wash, D7 drops significantly.
+
+![Retention D1 and D7 by group, with 95% confidence intervals](reports/figures/fig1_retention_by_group.png)
+
+**2. Day-7 retention by engagement segment** — the loss is not spread evenly; it lands on medium/heavy players.
+
+![Day-7 retention by engagement segment](reports/figures/fig2_segment_d7.png)
+
+**3. Bootstrap distribution of the engagement median difference** — the 95% CI contains 0, so there is no engagement gain to justify the retention loss.
+
+![Bootstrap distribution of the median difference in rounds played](reports/figures/fig3_bootstrap_median_ci.png)
+
+All three are regenerated from source with `python scripts/export_figures.py`.
+
+---
+
+## Business question
+
+> Does moving the gate 30 → 40 improve **player retention** (D1, D7) and **engagement**? → a **Go / No-Go** recommendation for the Product team.
 
 ## Dataset
 
-- **Nguồn:** Kaggle — *Mobile Games A/B Testing: Cookie Cats* (Tactile Entertainment via DataCamp)
-- **Quy mô:** ~90,000 users
-- **Fields:**
+- **Source:** Kaggle — *Mobile Games A/B Testing: Cookie Cats* (Tactile Entertainment via DataCamp)
+- **Scale:** 90,189 raw rows → **90,188 users** after the dedup and outlier policy
+- **Randomisation check:** SRM test passes (49.56% / 50.44%, p ≥ 0.001)
 
-| Field | Ý nghĩa |
+| Field | Meaning |
 |---|---|
-| `userid` | ID duy nhất của người chơi |
-| `version` | Nhóm test: `gate_30` (control) / `gate_40` (treatment) |
-| `sum_gamerounds` | Số lượt chơi trong 14 ngày đầu |
-| `retention_1` | Quay lại sau 1 ngày (bool) |
-| `retention_7` | Quay lại sau 7 ngày (bool) |
+| `userid` | Unique player ID |
+| `version` | Test group: `gate_30` (control) / `gate_40` (treatment) |
+| `sum_gamerounds` | Rounds played in the first 14 days |
+| `retention_1` | Returned after 1 day (0/1) |
+| `retention_7` | Returned after 7 days (0/1) |
 
-> ⚠️ File dữ liệu (`data/*.csv`) không được commit lên repo. Tải dataset gốc từ Kaggle và đặt vào `data/`.
+> ⚠️ The data file (`data/*.csv`) is not committed. Download the original dataset from Kaggle and place it in `data/`.
 
-## Hypotheses
+## Method
 
-- **H0₁:** Retention_D1(gate_30) = Retention_D1(gate_40)
-- **H0₂:** Retention_D7(gate_30) = Retention_D7(gate_40)
-- **H0₃:** Median(sum_gamerounds | gate_30) = Median(sum_gamerounds | gate_40)
+- **Hypotheses** — H0₁: D1 retention equal · H0₂: D7 retention equal · H0₃: median `sum_gamerounds` equal
+- **Tests** — χ² test of independence with Yates correction for the two retention metrics; Mann-Whitney U for engagement (heavily right-skewed distribution, so no normality assumption)
+- **Multiple testing** — α = 0.05 with a Bonferroni correction to α = 0.0167 across the 3 simultaneous tests
+- **Beyond the p-value** — Cohen's h effect size, 95% CI on the difference, 5,000-resample bootstrap, and a segment cut by engagement tertile, so the conclusion rests on practical and not just statistical significance
 
-Ngưỡng ý nghĩa α = 0.05 (cân nhắc Bonferroni correction α = 0.0167 cho 3 test đồng thời).
-
-## Cấu trúc thư mục
+## Repository structure
 
 ```
 .
-├── data/            # Dataset (CSV — gitignored)
-├── notebooks/       # Jupyter notebooks theo từng phase phân tích
-├── reports/         # Chart & báo cáo xuất ra (PNG, ...)
-├── sql/             # SQL scripts cho data preparation
-├── PROJECT_CONTEXT.md   # Bối cảnh, mục tiêu, scope & glossary chi tiết
+├── data/          # Dataset (CSV — gitignored)
+├── docs/          # Data dictionary, decision log (14 ADR), checklists, glossary
+├── notebooks/     # Jupyter notebooks by CRISP-DM phase
+├── reports/       # Word reports, executive summary (HTML + PDF), figures/
+├── scripts/       # Raw CSV → SQL Server loader, figure export
+├── sql/           # Idempotent SQL for data preparation
+├── PROJECT_CONTEXT.md
 ├── requirements.txt
 └── README.md
 ```
 
-## Tech Stack
+Files suffixed `.vi` / `_vi` are the Vietnamese version of the same document.
 
-- **Python:** pandas, numpy, scipy.stats, matplotlib, seaborn
-- **SQL:** SQL Server (localhost / SQLEXPRESS)
-- **BI:** Power BI Desktop
-- **Notebook:** Jupyter
+## Tech stack
 
-## Setup
-
-```bash
-python -m venv .venv
-.venv\Scripts\activate        # Windows
-pip install -r requirements.txt
-```
-
-Cấu hình kết nối database qua file `.env` (xem `.env` mẫu — không commit):
-
-```
-DB_SERVER=localhost\SQLEXPRESS
-DB_NAME=cookie_cats
-DB_DRIVER=ODBC Driver 17 for SQL Server
-DB_TRUSTED_CONNECTION=yes
-```
+- **Python** — pandas, numpy, scipy.stats, matplotlib, seaborn
+- **SQL** — SQL Server (schema + mart build, idempotent scripts with an audit trail)
+- **Notebook** — Jupyter
+- **Docs** — Word report per phase, decision log in ADR format
 
 ## Roadmap (CRISP-DM)
 
-| Phase | Nội dung | Trạng thái |
+| Phase | Content | Status |
 |---|---|---|
 | 1 | Business Understanding | ✅ Done |
-| 2 | EDA + Data Quality (SRM check, outlier, distribution) | ✅ Done |
-| 3 | Data Preparation (SQL) | ✅ Done |
-| 4 | Analysis (hypothesis test, bootstrap, segment) | ✅ Done |
-| 5 | Visualization | ⏭️ Bỏ Power BI dashboard (dữ liệu tĩnh — xem DEC-13); report thay thế |
-| 6 | Insights & Recommendation | ✅ Done |
-| 7 | Delivery & Documentation | ✅ Done |
-
-## Kết luận & Recommendation
-
-> **NO-GO — giữ nguyên gate tại level 30, không triển khai gate 40** (độ tin cậy > 95%).
-
-Ba trụ bằng chứng: (1) retention **D7 giảm 0,82pp (−4,3%)**, có ý nghĩa thống kê vượt cả ngưỡng Bonferroni (p = 0,0016); (2) **engagement bằng nhau** (p = 0,051, bootstrap CI chứa 0) — không có upside để đánh đổi; (3) tác hại tập trung ở nhóm **medium/heavy** (core user), nhóm light gần như không đổi. Tác động kinh doanh proxy (ARPDAU benchmark $0,10): **~818 user D7 mất/tháng trên mỗi 100K installs ≈ $2.454/tháng ≈ $29.448/năm**, tuyến tính theo traffic.
+| 2 | EDA + data quality (SRM check, outliers, distributions) | ✅ Done |
+| 3 | Data preparation (SQL) | ✅ Done |
+| 4 | Analysis (hypothesis tests, bootstrap, segments) | ✅ Done |
+| 5 | Visualization | ⏭️ Power BI dashboard dropped (static data — see DEC-13); reports instead |
+| 6 | Insights & recommendation | ✅ Done |
+| 7 | Delivery & documentation | ✅ Done |
 
 ## Deliverables
 
-| Loại | File |
+| Type | File |
 |---|---|
-| SQL scripts (idempotent) | `sql/phase3_00_create_metadata.sql`, `sql/phase3_01_build_mart_ab_test_base.sql`, `sql/phase3_02_validation_queries.sql` |
+| Executive 1-pager (Go/No-Go) | [`reports/CookieCats_Executive_Summary.pdf`](reports/CookieCats_Executive_Summary.pdf) |
+| Report — analysis | [`reports/CookieCats_Phase4_Hypothesis_Testing_Report.docx`](reports/CookieCats_Phase4_Hypothesis_Testing_Report.docx) |
+| Report — insights & recommendation | [`reports/CookieCats_Phase6_Insights_Recommend_Report.docx`](reports/CookieCats_Phase6_Insights_Recommend_Report.docx) |
+| Report — EDA / data prep | [`reports/CookieCats_Phase2_EDA_Data_Quality_Report.docx`](reports/CookieCats_Phase2_EDA_Data_Quality_Report.docx) · [`reports/CookieCats_Phase3_DataPrepare_Report.docx`](reports/CookieCats_Phase3_DataPrepare_Report.docx) |
+| Project closeout | [`reports/CookieCats_Phase7_Closeout-Report.docx`](reports/CookieCats_Phase7_Closeout-Report.docx) |
 | Notebooks — EDA | `notebooks/phase2_00` → `phase2_04` |
-| Notebooks — Analysis | `notebooks/phase4_01_retention` · `phase4_02_Engagement` · `phase4_03_segment` · `phase4_04_business_impact` |
-| Report Word — EDA / Data Prep | `reports/CookieCats_Phase2_EDA_Data_Quality_Report.docx`, `reports/CookieCats_Phase3_DataPrepare_Report.docx` |
-| Report Word — Analysis | `reports/CookieCats_Phase4_Hypothesis_Testing_Report.docx` |
-| Report Word — Insights & Recommendation | `reports/CookieCats_Phase6_Insights_Recommend_Report.docx` |
-| Project closeout doc | `reports/CookieCats_Phase7_Closeout-Report.docx` |
-| Executive 1-slide (Go/No-Go) | `reports/CookieCats_Executive_Summary.html` |
-| Decision log (14 ADR) | `docs/decision_log.md` |
-| Data dictionary · Preprocessing checklist | `docs/data_dictionary.md`, `docs/preprocessing_checklist.md` |
+| Notebooks — analysis | `notebooks/phase4_01_retention_hypothesis_test` · `phase4_02_engagement` · `phase4_03_segment_analysis` · `phase4_04_business_impact` |
+| SQL (idempotent) | `sql/phase3_load_raw_bulk_insert.sql` → `phase3_00_create_metadata.sql` → `phase3_01_build_mart_ab_test_base.sql` → `phase3_02_validation_queries.sql` |
+| Decision log (14 ADR) | [`docs/decision_log.md`](docs/decision_log.md) |
+| Data dictionary · preprocessing checklist | [`docs/data_dictionary.md`](docs/data_dictionary.md) · [`docs/preprocessing_checklist.md`](docs/preprocessing_checklist.md) |
 
 ## Reproducibility
 
-1. Tạo virtualenv và `pip install -r requirements.txt` (lưu ý: versions dùng `>=`, chưa pin cứng — pin lại nếu cần bản build cố định).
-2. Tải `cookie_cats.csv` từ Kaggle, đặt vào `data/` (file bị gitignore, không commit).
-3. Load CSV vào SQL Server bảng `dbo.raw_ab_test` (⚠️ hiện chưa có script tự động cho bước load raw này — thực hiện thủ công qua Import Wizard hoặc `BULK INSERT`).
-4. Chạy SQL theo thứ tự: `phase3_00` → `phase3_01` → `phase3_02` để dựng `cookie_cats.mart_ab_test_base`.
-5. Cấu hình `.env` (xem mẫu bên dưới) rồi chạy notebooks theo thứ tự phase.
+```bash
+python -m venv .venv
+.venv\Scripts\activate            # Windows
+pip install -r requirements.txt   # versions are pinned
+```
 
-> **Ghi chú dọn dẹp:** notebook `phase4_02_Engagement.ipynb` viết hoa chữ E, lệch convention lowercase của các file khác (minor). Bước load raw CSV → `dbo.raw_ab_test` hiện làm thủ công, chưa có script tự động.
+1. Download `cookie_cats.csv` from Kaggle and place it in `data/` (gitignored).
+2. Create a `.env` in the repo root:
+   ```
+   DB_SERVER=localhost\SQLEXPRESS
+   DB_NAME=cookie_cats
+   DB_DRIVER=ODBC Driver 17 for SQL Server
+   DB_TRUSTED_CONNECTION=yes
+   ```
+3. Load the raw CSV into `dbo.raw_ab_test` — `python scripts/load_raw_to_sqlserver.py` (it verifies the file MD5 against the provenance hash recorded in Phase 3; `sql/phase3_load_raw_bulk_insert.sql` is the T-SQL-only alternative).
+4. Run the SQL in order — `phase3_00` → `phase3_01` → `phase3_02` — to build `cookie_cats.mart_ab_test_base`.
+5. Run the notebooks in phase order. They read from SQL Server and fall back to the CSV, replicating the same mart policy, if no database is configured — so the analysis reproduces either way.
+6. Regenerate the README figures — `python scripts/export_figures.py`.
 
-Xem [`PROJECT_CONTEXT.md`](PROJECT_CONTEXT.md) để biết chi tiết scope, assumptions, stakeholder mapping và glossary thuật ngữ chuẩn ngành; [`docs/decision_log.md`](docs/decision_log.md) để biết lịch sử các quyết định (14 ADR).
+## Further reading
+
+[`PROJECT_CONTEXT.md`](PROJECT_CONTEXT.md) for scope, assumptions, stakeholder mapping and the terminology glossary · [`docs/decision_log.md`](docs/decision_log.md) for the 14 decisions and the reasoning behind each · [`docs/maintenance_notes.md`](docs/maintenance_notes.md) for repository housekeeping.
+
+## License
+
+[MIT](LICENSE) — analysis and code. The dataset belongs to its original authors on Kaggle.

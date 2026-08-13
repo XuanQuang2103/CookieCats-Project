@@ -8,104 +8,104 @@
 
 ---
 
-## Mục đích
+## Purpose
 
-Tài liệu này gồm 2 phần:
+This document has 2 parts:
 
-1. **Template** — checklist tái sử dụng được cho bất kỳ project data preparation nào theo CRISP-DM.
-2. **Validation Checklist (project-specific)** — checklist cụ thể cho Cookie Cats, list ra từng gate phải pass trước khi sang Phase 4.
+1. **Template** — a reusable checklist for any data preparation project following CRISP-DM.
+2. **Validation Checklist (project-specific)** — the specific checklist for Cookie Cats, listing each gate that must pass before moving to Phase 4.
 
 ---
 
-# PHẦN 1 — TEMPLATE (Reusable)
+# PART 1 — TEMPLATE (Reusable)
 
-Dùng làm boilerplate cho mọi project data preparation trong tương lai.
+Use as boilerplate for every future data preparation project.
 
-## 1.1. Pre-flight (trước khi động vào data)
+## 1.1. Pre-flight (before touching the data)
 
-- [x] Business context đã được document — có PROJECT_CONTEXT.md hoặc tương đương
-- [x] Hypothesis chính thức đã chốt — có H0/H1 rõ ràng, threshold α đã định
-- [x] Success criteria đã định nghĩa — biết khi nào project done
-- [x] Phase EDA đã completed — có EDA report/findings
-- [x] Working assumptions từ EDA đã được carry forward và document
-- [x] Decisions về data policy đã chốt bằng văn bản (không giữ trong đầu)
+- [x] Business context is documented — has PROJECT_CONTEXT.md or equivalent
+- [x] Formal hypotheses are fixed — has clear H0/H1, threshold α defined
+- [x] Success criteria are defined — you know when the project is done
+- [x] EDA phase is completed — has an EDA report/findings
+- [x] Working assumptions from EDA are carried forward and documented
+- [x] Data policy decisions are fixed in writing (not kept in your head)
 
 ## 1.2. Data Provenance & Version Control
 
-- [x] File source đã có MD5/SHA hash — verify được integrity
-- [x] Row count baseline đã ghi lại — so sánh được sau load
-- [x] Metadata table đã tạo (`meta_dataset_version` hoặc tương đương)
-- [x] 1 record active duy nhất cho version đang dùng
-- [ ] Idempotent load — chạy script lại không tạo duplicate metadata
+- [x] Source file has an MD5/SHA hash — integrity is verifiable
+- [x] Baseline row count is recorded — comparable after load
+- [x] Metadata table created (`meta_dataset_version` or equivalent)
+- [x] Exactly 1 active record for the version in use
+- [ ] Idempotent load — re-running the script does not create duplicate metadata
 
-## 1.3. Data Quality Rules (đã chốt trước khi code)
+## 1.3. Data Quality Rules (fixed before coding)
 
-- [x] Deduplication rule — có duplicate không, giữ record nào?
-- [x] Missing value policy — drop, impute, hay flag?
-- [x] Outlier policy — keep, winsorize, exclude, hay dual-track?
-- [x] Anomaly cases — policy là gì?
-- [x] Type casting — cast type nào sang type nào? Tại sao?
-- [x] Categorical encoding — nếu có, dùng scheme gì?
+- [x] Deduplication rule — are there duplicates, which record to keep?
+- [x] Missing value policy — drop, impute, or flag?
+- [x] Outlier policy — keep, winsorize, exclude, or dual-track?
+- [x] Anomaly cases — what is the policy?
+- [x] Type casting — cast which type to which type? Why?
+- [x] Categorical encoding — if any, which scheme?
 
-## 1.4. Feature Engineering (định nghĩa trước khi tạo)
+## 1.4. Feature Engineering (defined before creation)
 
-- [x] Danh sách derived columns đã chốt
-- [x] Bucketing/binning cutoff đã định — dùng percentile nào, tính trên population nào?
-- [x] Transformation formula đã document (log, sqrt, standardize, ...)
-- [x] Cross-group vs within-group logic đã cân nhắc — quan trọng với A/B test
+- [x] The list of derived columns is fixed
+- [x] Bucketing/binning cutoffs are defined — which percentile, computed on which population?
+- [x] Transformation formulas are documented (log, sqrt, standardize, ...)
+- [x] Cross-group vs within-group logic is considered — important for A/B tests
 
 ## 1.5. Build & Materialize
 
-- [x] Table target có primary key — đảm bảo unique
-- [x] Table có CHECK constraint cho categorical column
-- [x] Script idempotent — chạy lại không hỏng data
-- [x] Full rebuild vs incremental — chọn strategy phù hợp scale
-- [x] Transformation log đã insert — audit trail đầy đủ
+- [x] The target table has a primary key — ensures uniqueness
+- [x] The table has a CHECK constraint for categorical columns
+- [x] The script is idempotent — re-running does not corrupt the data
+- [x] Full rebuild vs incremental — choose the strategy suited to scale
+- [x] Transformation log is inserted — a complete audit trail
 
 ## 1.6. Documentation
 
-- [x] Data dictionary cho target table
-- [x] Transformation notes — từng bước làm gì, tại sao
-- [x] Decision log — mỗi quyết định policy có rationale
-- [x] SQL scripts có comment
+- [x] Data dictionary for the target table
+- [x] Transformation notes — what each step does, why
+- [x] Decision log — each policy decision has a rationale
+- [x] SQL scripts are commented
 
-## 1.7. Validation (Gate cuối)
+## 1.7. Validation (Final Gate)
 
 - [x] Row count reconciliation
 - [x] No unexpected duplicates
 - [x] No unexpected NULLs
 - [x] Distribution sanity check
 - [x] Randomization re-check (SRM)
-- [x] Categorical bucket distribution hợp lý
+- [x] Categorical bucket distribution is reasonable
 - [x] Business metrics preview
 
-**Rule cứng: nếu bất kỳ gate nào FAIL → không được sang phase tiếp theo.**
+**Hard rule: if any gate FAILS → you may not move to the next phase.**
 
 ---
 
-# PHẦN 2 — VALIDATION CHECKLIST (Cookie Cats A/B Test)
+# PART 2 — VALIDATION CHECKLIST (Cookie Cats A/B Test)
 
 ## 2.1. Pre-flight
 
 | # | Check | Expected | Actual | Status |
 |---|---|---|---|---|
-| P1 | PROJECT_CONTEXT.md tồn tại | Root project | ✅ Present | ✅ |
-| P2 | Phase 2 EDA hoàn thành | 4 groups + report | ✅ Done | ✅ |
-| P3 | Working assumptions đã ghi | 87 zero-round users | ✅ Documented | ✅ |
-| P4 | Hypothesis formal | H0₁, H0₂, H0₃ với α=0.05 | ✅ | ✅ |
+| P1 | PROJECT_CONTEXT.md exists | Project root | ✅ Present | ✅ |
+| P2 | Phase 2 EDA completed | 4 groups + report | ✅ Done | ✅ |
+| P3 | Working assumptions recorded | 87 zero-round users | ✅ Documented | ✅ |
+| P4 | Formal hypotheses | H0₁, H0₂, H0₃ with α=0.05 | ✅ | ✅ |
 | P5 | SRM threshold agreed | p < 0.001 | ✅ | ✅ |
 
 ## 2.2. Data Provenance
 
 | # | Check | Expected | Actual | Status |
 |---|---|---|---|---|
-| D1 | MD5 hash raw file | `99b48ea3d4a552fa6b27aac60a8cfddf` | Confirmed via metadata | ✅ |
+| D1 | MD5 hash of raw file | `99b48ea3d4a552fa6b27aac60a8cfddf` | Confirmed via metadata | ✅ |
 | D2 | Raw row count | 90,189 | 90,189 | ✅ |
 | D3 | Raw column count | 5 | 5 | ✅ |
 | D4 | 1 active metadata record | 1 row is_active=1 | 1 row | ✅ |
 | D5 | target_table field | `dbo.raw_ab_test` | `dbo.raw_ab_test` | ✅ |
 
-## 2.3. Data Policy Decisions (reference chính thức)
+## 2.3. Data Policy Decisions (official reference)
 
 | # | Decision | Chosen policy |
 |---|---|---|
@@ -121,7 +121,7 @@ Dùng làm boilerplate cho mọi project data preparation trong tương lai.
 
 ## 2.4. Build Validation
 
-Thực hiện qua `sql/03_validation_queries.sql`.
+Performed via `sql/03_validation_queries.sql`.
 
 | # | Check | Expected | Actual | Status |
 |---|---|---|---|---|
@@ -131,7 +131,7 @@ Thực hiện qua `sql/03_validation_queries.sql`.
 | VAL-4 | NULLs in mart | 0 | 0 | ✅ |
 | VAL-5 | SRM re-check | chi² < 10.828 (p ≥ 0.001) | ~6.92 | ✅ |
 | VAL-6 | Bucket distribution | ~33/34/33 | ~33/34/33 | ✅ |
-| VAL-7 | sum_gamerounds stats vs Phase 2 | khớp EDA (minus outlier) | Khớp | ✅ |s
+| VAL-7 | sum_gamerounds stats vs Phase 2 | matches EDA (minus outlier) | Matches | ✅ |s
 | VAL-8 | Retention baseline | D1 ~44%, D7 ~18% |D1 ~44%, D7 ~18%| ✅ |
 
 ## 2.5. Documentation Artifacts
@@ -139,24 +139,22 @@ Thực hiện qua `sql/03_validation_queries.sql`.
 | # | Artifact | Location | Status |
 |---|---|---|---|
 | DOC-1 | `preprocessing_checklist.md` | `docs/` | ✅ (this file) |
-| DOC-2 | `data_dictionary.md` cho `mart_ab_test_base` | `docs/` | ✅ Executed |
-| DOC-3 | `decision_log.md` — log các quyết định policy xuyên project | `docs/` | ✅ Executed |
-| DOC-4 | `01_metadata_setup.sql` (Bước 2) | `sql/` | ✅ Executed |
-| DOC-5 | `02_build_mart_ab_test_base.sql` (Bước 3) | `sql/` | ✅ Executed |
+| DOC-2 | `data_dictionary.md` for `mart_ab_test_base` | `docs/` | ✅ Executed |
+| DOC-3 | `decision_log.md` — log of policy decisions across the project | `docs/` | ✅ Executed |
+| DOC-4 | `01_metadata_setup.sql` (Step 2) | `sql/` | ✅ Executed |
+| DOC-5 | `02_build_mart_ab_test_base.sql` (Step 3) | `sql/` | ✅ Executed |
 | DOC-6 | `03_validation_queries.sql` | `sql/` | ✅ Executed |
 | DOC-7 | Transformation log populated | `cookie_cats.meta_transformation_log` | ✅ |
 
 ## 2.6. Sign-off
 
-Không sang Phase 4 cho đến khi:
+Do not move to Phase 4 until:
 
-- [x] Tất cả VAL-1 → VAL-8 status = ✅ PASS
-- [x] Data dictionary (DOC-2) hoàn thành
-- [x] Decision log (DOC-3) hoàn thành
-- [x] Section 2.4 (Actual) đã fill số cụ thể (tùy chọn nhưng khuyến nghị)
-- [x] Bản checklist này commit vào repo
+- [x] All VAL-1 → VAL-8 status = ✅ PASS
+- [x] Data dictionary (DOC-2) completed
+- [x] Decision log (DOC-3) completed
+- [x] Section 2.4 (Actual) filled with concrete numbers (optional but recommended)
+- [x] This checklist is committed to the repo
 
 **Approver:** Xuân Quang
 **Sign-off date:** 2026-08-07
-
-

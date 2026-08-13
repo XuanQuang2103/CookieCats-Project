@@ -1,445 +1,445 @@
 # Decision Log
 
 **Project:** Cookie Cats A/B Test Analysis
-**Purpose:** Log các quyết định major xuyên project với rationale. Đây là "lịch sử tư duy" — 3 tháng sau đọc lại vẫn hiểu tại sao chọn cách này thay vì cách khác.
-**Format:** Architectural Decision Record (ADR) simplified.
+**Purpose:** Log the major decisions across the project with their rationale. This is the "history of reasoning" — reading it back 3 months later, you still understand why this approach was chosen over another.
+**Format:** Architectural Decision Record (ADR), simplified.
 **Owner:** Xuân Quang
 **Last updated:** 2026-08-08 (Phase 7 — Delivery & Documentation)
 
 ---
 
-## Cấu trúc mỗi entry
+## Structure of each entry
 
 - **Status:** `Accepted` / `Superseded` / `Under review`
-- **Date:** ngày ra quyết định
-- **Phase:** phase nào quyết định được đưa ra
-- **Context:** situation dẫn đến cần quyết định
-- **Decision:** chọn cái gì
-- **Rationale:** tại sao chọn cái đó
-- **Alternatives considered:** đã xem xét gì khác
-- **Tradeoffs:** đánh đổi gì để có lợi ích gì
-- **Consequences:** hệ quả downstream
+- **Date:** date the decision was made
+- **Phase:** which phase the decision was made in
+- **Context:** the situation leading to the need for a decision
+- **Decision:** what was chosen
+- **Rationale:** why that was chosen
+- **Alternatives considered:** what else was examined
+- **Tradeoffs:** what was traded away to gain what benefit
+- **Consequences:** downstream consequences
 
 ---
 
-## DEC-01 — SRM threshold p < 0.001 thay vì 0.05 chuẩn
+## DEC-01 — SRM threshold p < 0.001 instead of the standard 0.05
 
 - **Status:** Accepted
 - **Date:** Phase 1 (business understanding), reconfirmed Phase 2
 - **Phase:** 2
 
 **Context:**
-SRM (Sample Ratio Mismatch) check là gate đầu tiên của A/B test. Ngưỡng α mặc định cho hypothesis testing thường là 0.05. Câu hỏi: nên dùng α nào cho SRM check?
+The SRM (Sample Ratio Mismatch) check is the first gate of an A/B test. The default α threshold for hypothesis testing is usually 0.05. Question: which α should be used for the SRM check?
 
-Hai loại error cần cân nhắc:
-- **Type I error** (false positive): báo động có SRM trong khi ratio thực ra ổn → false alarm, dừng test oan.
-- **Type II error** (false negative): bỏ sót SRM thật (ratio thực sự lệch mà không phát hiện) → toàn bộ analysis downstream invalid. Đây là error đáng sợ nhất về mặt hậu quả.
+Two kinds of error to weigh:
+- **Type I error** (false positive): raising an SRM alarm when the ratio is actually fine → false alarm, stopping the test needlessly.
+- **Type II error** (false negative): missing a real SRM (the ratio truly deviates but goes undetected) → the entire downstream analysis is invalid. This is the most fearsome error in terms of consequences.
 
-Lưu ý quan hệ cơ bản: α = P(Type I). Tăng α → dễ reject H0 → Type I tăng nhưng Type II giảm. Nếu chỉ nhìn quan hệ này, muốn giảm Type II (thứ đáng sợ) thì phải **tăng** α, không phải giảm. Đây là điểm counter-intuitive cần giải quyết.
+Note the basic relationship: α = P(Type I). Increasing α → easier to reject H0 → Type I rises but Type II falls. Looking only at this relationship, to reduce Type II (the fearsome one) you would have to **increase** α, not decrease it. This is the counter-intuitive point to resolve.
 
 **Decision:**
-Sử dụng α = 0.001 (thay vì 0.05) cho SRM chi-square test. Chỉ khi p < 0.001 mới coi là SRM broken.
+Use α = 0.001 (instead of 0.05) for the SRM chi-square test. Only when p < 0.001 is the SRM considered broken.
 
 **Rationale:**
-Lý do hạ α (chứ không tăng) nằm ở yếu tố **sample size** mà quan hệ "α vs error" đơn thuần bỏ qua — cụ thể là power của test:
+The reason for lowering α (rather than raising it) lies in the **sample size** factor that the plain "α vs error" relationship ignores — specifically, the power of the test:
 
-- **Ở n = 90K, power ≈ 100% ngay cả với α = 0.001.** Power (1 − β) phụ thuộc α, effect size, và sample size. Với n rất lớn, test đủ mạnh để detect mọi SRM *meaningful* dù α nhỏ. Nghĩa là hạ α gần như **không làm Type II tăng** cho các SRM đáng lo ngại — sample size lớn đã "gánh" power giùm.
-- **Hạ α giải quyết vấn đề thực ở n lớn: Type I / alert fatigue.** Ở n = 90K, chi-square nhạy đến mức deviation trivial (VD 49.7/50.3, không ai quan tâm) cũng ra p < 0.05. Đây là vấn đề statistical significance vs practical significance: ở n lớn mọi thứ đều statistically significant, phải nâng bar để lọc ra cái practically significant. α = 0.001 chỉ báo động khi deviation đủ lớn để nghi structural issue thật.
-- **Industry standard:** Microsoft, Booking.com dùng ngưỡng 0.001 hoặc nghiêm hơn cho SRM, chính vì lý do alert fatigue trong high-throughput testing environment (hàng nghìn test/năm).
+- **At n = 90K, power ≈ 100% even with α = 0.001.** Power (1 − β) depends on α, effect size, and sample size. With a very large n, the test is strong enough to detect any *meaningful* SRM even with a small α. This means lowering α **hardly increases Type II** for the SRMs we worry about — the large sample size "carries" the power for us.
+- **Lowering α solves the real problem at large n: Type I / alert fatigue.** At n = 90K, chi-square is so sensitive that a trivial deviation (e.g. 49.7/50.3, which nobody cares about) also yields p < 0.05. This is the issue of statistical significance vs practical significance: at large n everything is statistically significant, so you must raise the bar to filter out what is practically significant. α = 0.001 only alarms when the deviation is large enough to suspect a real structural issue.
+- **Industry standard:** Microsoft, Booking.com use thresholds of 0.001 or stricter for SRM, precisely because of alert fatigue in high-throughput testing environments (thousands of tests/year).
 
-Tóm gọn: chọn α = 0.001 **không phải** để giảm Type II, mà để giảm Type I — và ta dám làm vậy vì sample size lớn đã giữ Type II thấp giùm rồi.
+In short: choosing α = 0.001 is **not** to reduce Type II, but to reduce Type I — and we dare do so because the large sample size already keeps Type II low for us.
 
 **Alternatives considered:**
-- α = 0.05: ở n = 90K quá nhạy, false positive từ noise trivial liên tục → alert fatigue
-- α = 0.01: middle ground nhưng không phổ biến bằng 0.001 trong industry SRM practice
-- Tăng α lên >0.05: theo logic "α vs error" thuần túy sẽ giảm Type II, nhưng ở n lớn Type II vốn đã thấp, tăng α chỉ làm Type I tệ hơn → không có lợi
+- α = 0.05: at n = 90K too sensitive, false positives from trivial noise constantly → alert fatigue
+- α = 0.01: a middle ground but less common than 0.001 in industry SRM practice
+- Raising α above 0.05: by the pure "α vs error" logic this would reduce Type II, but at large n Type II is already low, so raising α only makes Type I worse → no benefit
 
 **Tradeoffs:**
-- Đánh đổi: về mặt technical, α ↓ → Type II ↑. Nhưng ở n = 90K, mức tăng này negligible cho SRM meaningful (power vẫn ≈100%). Chỉ mất khả năng detect SRM trivial (VD 49.9/50.1) — thứ không impact downstream đáng kể.
-- Được: giảm mạnh Type I / false alarm, tránh dừng test oan và escalate không cần thiết.
-- **Caveat quan trọng:** rationale này phụ thuộc sample size lớn. Nếu project sau có n nhỏ (VD vài trăm/vài nghìn), power sẽ thấp, lúc đó hạ α = 0.001 khiến Type II tăng đáng kể — nên cân nhắc lại, có thể giữ α cao hơn.
+- Trade-off: technically, α ↓ → Type II ↑. But at n = 90K this increase is negligible for a meaningful SRM (power is still ≈100%). We only lose the ability to detect a trivial SRM (e.g. 49.9/50.1) — something that does not materially impact downstream.
+- Gain: a strong reduction in Type I / false alarms, avoiding needlessly stopping the test and escalating.
+- **Important caveat:** this rationale depends on a large sample size. If a future project has a small n (e.g. a few hundred/thousand), power will be low, and then lowering α to 0.001 would raise Type II significantly — so reconsider, possibly keeping a higher α.
 
 **Consequences:**
-- Phase 2 SRM check pass (chi² = 6.902, p = 0.009)
-- Phase 3 SRM re-check pass (chi² = 6.919, p ≈ 0.009)
-- Phase 4 analysis được tiếp tục hợp lệ
+- Phase 2 SRM check passes (chi² = 6.902, p = 0.009)
+- Phase 3 SRM re-check passes (chi² = 6.919, p ≈ 0.009)
+- Phase 4 analysis is validly continued
 
 ---
 
-## DEC-02 — Keep 87 zero-round-but-retained users
+## DEC-02 — Keep the 87 zero-round-but-retained users
 
 - **Status:** Accepted
 - **Date:** Phase 2 (SRM Check, Group 2)
 - **Phase:** 2, carried to Phase 3 (POL-2)
 
 **Context:**
-Trong dataset có 87 user có `sum_gamerounds = 0` (không chơi vòng nào) nhưng `retention_1 = 1` (29 user còn có `retention_7 = 1`). Hai lựa chọn: (1) coi là data anomaly, exclude; (2) accept là behavior thực và giữ.
+The dataset contains 87 users with `sum_gamerounds = 0` (played no rounds) but `retention_1 = 1` (29 of them also have `retention_7 = 1`). Two options: (1) treat as a data anomaly, exclude; (2) accept as real behavior and keep.
 
 **Decision:**
-Giữ nguyên 87 user này trong analysis. Document working assumption: **retention metrics track app opens, không phải actual gameplay.**
+Keep these 87 users in the analysis. Document the working assumption: **retention metrics track app opens, not actual gameplay.**
 
 **Rationale:**
-- Đây là behavior explainable: user install → mở app → chưa play → đóng → hôm sau mở lại. App session tồn tại, gameplay session không.
-- Loại các user này = throw away 87 data points của behavior thực. Ảnh hưởng đến retention rate estimation.
-- Working assumption "retention track app opens" phù hợp với cách nhiều mobile analytics platform (Firebase, Appsflyer) track retention mặc định.
+- This is explainable behavior: user installs → opens the app → doesn't play yet → closes → opens again the next day. The app session exists, the gameplay session does not.
+- Excluding these users = throwing away 87 data points of real behavior. It affects retention rate estimation.
+- The working assumption "retention tracks app opens" matches how many mobile analytics platforms (Firebase, Appsflyer) track retention by default.
 
 **Alternatives considered:**
-- Exclude 87 user: giảm sample size, throw away data không justify được
-- Flag riêng: thêm complexity, không lợi ích rõ ràng
+- Exclude the 87 users: reduces sample size, throws away data without justification
+- Flag them separately: adds complexity, no clear benefit
 
 **Tradeoffs:**
-- Đánh đổi: "retention" trong project này không đồng nghĩa "player retention" theo nghĩa gameplay
-- Được: preserve sample size và data integrity
+- Trade-off: "retention" in this project does not mean "player retention" in the gameplay sense
+- Gain: preserves sample size and data integrity
 
 **Consequences:**
-- Trong report cuối, phải phân biệt rõ "app retention" vs "gameplay retention"
-- Bất kỳ conclusion nào về "player quay lại chơi" phải qualified với caveat này
-- Stakeholder deliverables cần có 1 dòng disclaimer về interpretation
+- In the final report, clearly distinguish "app retention" vs "gameplay retention"
+- Any conclusion about "players returning to play" must be qualified with this caveat
+- Stakeholder deliverables need a one-line disclaimer about interpretation
 
 ---
 
-## DEC-03 — Exclude chỉ 1 outlier user 49,854 rounds
+## DEC-03 — Exclude only 1 outlier user with 49,854 rounds
 
 - **Status:** Accepted
 - **Date:** Phase 3
 - **Phase:** 3 (POL-3, POL-4)
 
 **Context:**
-Phase 2 Group 4 (Outlier Analysis) phát hiện 1 user có `sum_gamerounds = 49,854` — cao gấp ~1000 lần median. Trong 14 ngày = 3,561 rounds/ngày = ~148 rounds/giờ liên tục 24/7. Không realistic cho human player.
+Phase 2 Group 4 (Outlier Analysis) found 1 user with `sum_gamerounds = 49,854` — about 1000× the median. Over 14 days = 3,561 rounds/day = ~148 rounds/hour continuously 24/7. Not realistic for a human player.
 
 **Decision:**
-Exclude chỉ 1 user duy nhất này. Không apply threshold-based filtering nào khác — mọi user còn lại (kể cả 2,000-3,000 rounds) đều giữ.
+Exclude only this single user. Do not apply any other threshold-based filtering — all remaining users (including those with 2,000-3,000 rounds) are kept.
 
 **Rationale:**
-- Bot/emulator hypothesis strong: 148 rounds/hour continuous không thể là human behavior
-- Các outlier "nhỏ hơn" (VD 2,000-3,000 rounds) có thể là legitimate hardcore players — không nên throw away
-- Giữ minimum data intervention: mọi filter đều là source of potential bias
+- The bot/emulator hypothesis is strong: 148 rounds/hour continuous cannot be human behavior
+- The "smaller" outliers (e.g. 2,000-3,000 rounds) could be legitimate hardcore players — should not be thrown away
+- Keep data intervention to a minimum: every filter is a source of potential bias
 
 **Alternatives considered:**
-- **Winsorize ở p99:** đơn giản, standard practice, nhưng throw away signal của legitimate heavy users
-- **Dual-track (2 version có/không outlier):** thorough nhất nhưng gấp đôi complexity analysis
-- **Không loại gì:** giữ user 49,854, dùng median/non-parametric — nhưng chi² test và mean-based metric sẽ bị distort mạnh
+- **Winsorize at p99:** simple, standard practice, but throws away the signal of legitimate heavy users
+- **Dual-track (2 versions with/without outlier):** the most thorough but doubles the analysis complexity
+- **Exclude nothing:** keep the 49,854 user, use median/non-parametric — but the chi² test and mean-based metrics would be strongly distorted
 
 **Tradeoffs:**
-- Đánh đổi: 1 record loại có thể tạo bias nhỏ (giảm n gate_30 thêm 1)
-- Được: distribution `sum_gamerounds` không còn bị pull bởi outlier extreme; mean/variance metrics reliable hơn
+- Trade-off: removing 1 record may create a small bias (reduces gate_30's n by 1 more)
+- Gain: the `sum_gamerounds` distribution is no longer pulled by an extreme outlier; mean/variance metrics are more reliable
 
 **Consequences:**
-- `mart_ab_test_base` có 90,188 rows (raw 90,189 − 1)
-- SRM re-check vẫn PASS sau exclude
-- Phase 4 vẫn nên ưu tiên non-parametric methods (Mann-Whitney U) cho engagement analysis vì distribution vẫn right-skewed
+- `mart_ab_test_base` has 90,188 rows (raw 90,189 − 1)
+- SRM re-check still PASSES after exclusion
+- Phase 4 should still prefer non-parametric methods (Mann-Whitney U) for engagement analysis because the distribution is still right-skewed
 
 ---
 
-## DEC-04 — Engagement bucket compute trên total population
+## DEC-04 — Engagement bucket computed on the total population
 
 - **Status:** Accepted
 - **Date:** Phase 3
 - **Phase:** 3 (POL-6, POL-7)
 
 **Context:**
-Cần chia user thành 3 nhóm engagement (light/medium/heavy) theo percentile của `sum_gamerounds`. Hai cách:
-- **Cách A:** compute p33/p67 trên toàn population (2 group gộp) → 1 ngưỡng chung
-- **Cách B:** compute p33/p67 riêng cho từng group → mỗi group có ngưỡng riêng
+Users need to be split into 3 engagement groups (light/medium/heavy) by percentile of `sum_gamerounds`. Two approaches:
+- **Approach A:** compute p33/p67 on the whole population (both groups combined) → one common threshold
+- **Approach B:** compute p33/p67 separately per group → each group has its own threshold
 
 **Decision:**
-Chọn Cách A — compute percentile trên toàn population sau dedup + outlier removal.
+Choose Approach A — compute percentiles on the whole population after dedup + outlier removal.
 
 **Rationale:**
-- Với A/B test, key question là "gate_30 vs gate_40 khác nhau thế nào". So sánh cần **cùng thước đo** giữa 2 group.
-- Cách B tạo "heavy user của gate_30" khác định nghĩa với "heavy user của gate_40" → so sánh cross-group không meaningful.
-- Cách A cho phép câu hỏi meaningful: "trong tất cả heavy user, proportion của gate_30 vs gate_40 là bao nhiêu?"
+- For an A/B test, the key question is "how do gate_30 and gate_40 differ". A comparison needs the **same measuring stick** between the two groups.
+- Approach B makes "heavy user of gate_30" a different definition from "heavy user of gate_40" → a cross-group comparison is not meaningful.
+- Approach A allows a meaningful question: "among all heavy users, what is the proportion of gate_30 vs gate_40?"
 
 **Alternatives considered:**
-- Cách B: hữu ích khi phân tích behavior nội bộ từng group, nhưng không phải use case chính
-- Fixed threshold (VD 10, 50, 200 rounds): dễ hiểu nhưng arbitrary, không data-driven
+- Approach B: useful when analyzing behavior internal to each group, but not the main use case
+- Fixed thresholds (e.g. 10, 50, 200 rounds): easy to understand but arbitrary, not data-driven
 
 **Tradeoffs:**
-- Đánh đổi: nếu 2 group có distribution rất khác nhau, ngưỡng chung có thể mask insight về distribution shift
-- Được: comparable buckets, valid cross-group analysis
+- Trade-off: if the two groups have very different distributions, a common threshold may mask insight about the distribution shift
+- Gain: comparable buckets, valid cross-group analysis
 
 **Consequences:**
-- Bucket distribution có thể lệch nhẹ 33/34/33 do discrete ties tại boundary percentile
-- Nếu Phase 4 muốn phân tích thêm góc "heavy user internal to each group", có thể tính bucket riêng như supplementary analysis
+- The bucket distribution may skew slightly from 33/34/33 due to discrete ties at the boundary percentile
+- If Phase 4 wants to analyze the "heavy user internal to each group" angle further, buckets can be computed separately as a supplementary analysis
 
 ---
 
-## DEC-05 — Naming convention: `dbo` cho raw, `cookie_cats` cho analytics
+## DEC-05 — Naming convention: `dbo` for raw, `cookie_cats` for analytics
 
 - **Status:** Accepted
-- **Date:** Phase 3, Bước 1
+- **Date:** Phase 3, Step 1
 - **Phase:** 3
 
 **Context:**
-Database `cookie_cats` đã có raw table nằm ở schema `dbo` (`dbo.raw_ab_test`). Cần quyết định layout schema cho các table downstream (mart, meta).
+The `cookie_cats` database already has the raw table in the `dbo` schema (`dbo.raw_ab_test`). A schema layout for the downstream tables (mart, meta) needs to be decided.
 
 **Decision:**
-- Giữ raw table ở `dbo.raw_ab_test`, không di chuyển
-- Tạo schema `cookie_cats` trong database `cookie_cats` cho toàn bộ analytics layer
-- Prefix: `mart_` cho analysis-ready tables, `meta_` cho audit tables
+- Keep the raw table at `dbo.raw_ab_test`, do not move it
+- Create a `cookie_cats` schema inside the `cookie_cats` database for the entire analytics layer
+- Prefix: `mart_` for analysis-ready tables, `meta_` for audit tables
 
 **Rationale:**
-- Ranh giới rõ ràng: `dbo` = external/raw data, `cookie_cats` schema = analysis layer do project team own
-- Không cần chạm raw table → giảm risk accidental corruption
-- Convention `mart_` / `meta_` prefix inspired bởi dbt và modern data stack practices
+- A clear boundary: `dbo` = external/raw data, the `cookie_cats` schema = the analysis layer owned by the project team
+- No need to touch the raw table → reduces the risk of accidental corruption
+- The `mart_` / `meta_` prefix convention is inspired by dbt and modern data stack practices
 
 **Alternatives considered:**
-- Tất cả trong `dbo`: đơn giản hơn nhưng mất ranh giới raw/analytics
-- Schema riêng cho `mart` và `meta` (2 schema): overkill cho scope này
+- Everything in `dbo`: simpler but loses the raw/analytics boundary
+- Separate schemas for `mart` and `meta` (2 schemas): overkill for this scope
 
 **Tradeoffs:**
-- Đánh đổi: fully qualified name dài hơn (`cookie_cats.mart_ab_test_base` vs `dbo.mart_ab_test_base`)
-- Được: clarity về layer boundary, dễ grant permission theo schema sau này nếu scale
+- Trade-off: the fully qualified name is longer (`cookie_cats.mart_ab_test_base` vs `dbo.mart_ab_test_base`)
+- Gain: clarity about layer boundaries, easier to grant permissions per schema later if it scales
 
 **Consequences:**
-- Mọi query downstream (Phase 4, Power BI, notebooks) reference `cookie_cats.mart_ab_test_base`
-- Nếu backup, có thể backup riêng schema `cookie_cats` mà không cần raw
+- Every downstream query (Phase 4, Power BI, notebooks) references `cookie_cats.mart_ab_test_base`
+- If backing up, the `cookie_cats` schema can be backed up separately without the raw data
 
 ---
 
-## DEC-06 — Không cast `retention_1` / `retention_7` sang BIT
+## DEC-06 — Do not cast `retention_1` / `retention_7` to BIT
 
 - **Status:** Accepted
 - **Date:** Phase 3
 - **Phase:** 3 (POL-5)
 
 **Context:**
-Raw table có `retention_1` và `retention_7` type `BIGINT` với giá trị 0/1. Semantic là biến binary — cast sang `BIT` sẽ đúng semantic hơn và tiết kiệm storage.
+The raw table has `retention_1` and `retention_7` of type `BIGINT` with values 0/1. Semantically they are binary variables — casting to `BIT` would be more semantically correct and save storage.
 
 **Decision:**
-Giữ nguyên native `BIGINT`, không cast sang `BIT`.
+Keep the native `BIGINT`, do not cast to `BIT`.
 
 **Rationale:**
-- Power BI đọc `BIT` như boolean, đôi khi gây rắc rối với DAX aggregation. `BIGINT` đọc trực tiếp là 0/1 và `AVG()` = retention rate dễ dàng.
-- pandas đọc `BIGINT` thành `int64` — behavior predictable; `BIT` có thể ra `bool` hoặc `int8` tùy driver, ít consistent.
-- Space savings không đáng kể với 90K rows.
+- Power BI reads `BIT` as boolean, which sometimes causes trouble with DAX aggregation. `BIGINT` reads directly as 0/1 and `AVG()` = retention rate easily.
+- pandas reads `BIGINT` as `int64` — predictable behavior; `BIT` may come out as `bool` or `int8` depending on the driver, less consistent.
+- The space savings are negligible with 90K rows.
 
 **Alternatives considered:**
-- Cast sang `BIT`: đúng semantic hơn, nhưng downstream tool compat kém hơn
-- Cast sang `TINYINT`: middle ground, nhưng không có lợi ích rõ ràng
+- Cast to `BIT`: more semantically correct, but worse downstream tool compatibility
+- Cast to `TINYINT`: a middle ground, but with no clear benefit
 
 **Tradeoffs:**
-- Đánh đổi: type không phản ánh chính xác semantic (binary flag stored as BIGINT)
-- Được: downstream compatibility với Power BI, pandas, notebooks
+- Trade-off: the type does not accurately reflect the semantics (a binary flag stored as BIGINT)
+- Gain: downstream compatibility with Power BI, pandas, notebooks
 
 **Consequences:**
-- Trong `data_dictionary.md`, ghi rõ column là binary flag với domain {0, 1} dù type là `BIGINT`
-- Downstream code aggregation: `AVG(CAST(retention_1 AS FLOAT))` để tránh integer division
+- In `data_dictionary.md`, clearly note that the column is a binary flag with domain {0, 1} despite being of type `BIGINT`
+- Downstream aggregation code: `AVG(CAST(retention_1 AS FLOAT))` to avoid integer division
 
 ---
 
-## DEC-07 — Cross-validation giữa SQL và Python cho statistical checks
+## DEC-07 — Cross-validation between SQL and Python for statistical checks
 
 - **Status:** Accepted (post-incident)
-- **Date:** Phase 3 (phát sinh trong quá trình verify VAL-5)
+- **Date:** Phase 3 (arose during VAL-5 verification)
 - **Phase:** 3
 
 **Context:**
-Trong quá trình chạy VAL-5 (SRM re-check), SQL implementation của công thức chi-square trả về chi² = 13.84 → FAIL, trong khi Phase 2 Python implementation với cùng data cho chi² = 6.902 → PASS. Sau khi debug, phát hiện SQL formula bị bug algebra — thừa hệ số 2.
+While running VAL-5 (SRM re-check), the SQL implementation of the chi-square formula returned chi² = 13.84 → FAIL, whereas the Phase 2 Python implementation on the same data gave chi² = 6.902 → PASS. After debugging, an algebra bug was found in the SQL formula — an extra factor of 2.
 
-Root cause: khi derive công thức rút gọn `χ² = k × (n30 - n40)² / n` cho case expected 50/50, tính sai hệ số k. Đúng là k = 1, đã viết thành k = 2.
+Root cause: when deriving the simplified formula `χ² = k × (n30 - n40)² / n` for the expected 50/50 case, the coefficient k was computed wrong. The correct value is k = 1, but it was written as k = 2.
 
 **Decision:**
-Từ giờ, mọi statistical formula viết bằng SQL cho analytical checks phải được cross-validate với reference implementation (scipy/statsmodels) trước khi trust kết quả.
+From now on, every statistical formula written in SQL for analytical checks must be cross-validated against a reference implementation (scipy/statsmodels) before the result is trusted.
 
 **Rationale:**
-- SQL không có unit test framework standard cho statistical formulas
-- Công thức "rút gọn" tiết kiệm compute nhưng tăng risk algebra error
-- Cost của cross-check thấp (~5 phút), benefit cao (catch bug thầm)
+- SQL has no standard unit test framework for statistical formulas
+- A "simplified" formula saves compute but increases the risk of an algebra error
+- The cost of a cross-check is low (~5 minutes), the benefit high (catch a silent bug)
 
 **Alternatives considered:**
-- Không cross-check: nhanh hơn nhưng đã chứng minh unsafe
-- Dùng luôn scipy trong Python, bỏ SQL statistical checks: mất khả năng data quality gate trong SQL layer
+- No cross-check: faster but proven unsafe
+- Use scipy in Python and drop the SQL statistical checks: loses the data quality gate in the SQL layer
 
 **Tradeoffs:**
-- Đánh đổi: thêm 1 bước verify cho mỗi check
-- Được: catch được bug tầm này sớm
+- Trade-off: adds 1 verification step per check
+- Gain: catches bugs of this kind early
 
 **Consequences:**
-- VAL-5 formula đã fix: `χ² = (n30 - n40)² / n`
-- Preventive: các script SQL analytical downstream (Phase 4-6 nếu có) phải có comparison test với Python
-- Lesson embedded: user Xuân Quang phát hiện discrepancy nhờ cross-check với Phase 2 output — đây là data science hygiene tốt, giữ tiếp habit này
+- The VAL-5 formula is fixed: `χ² = (n30 - n40)² / n`
+- Preventive: downstream analytical SQL scripts (Phase 4-6 if any) must have a comparison test against Python
+- Lesson embedded: user Xuân Quang spotted the discrepancy thanks to cross-checking against the Phase 2 output — this is good data science hygiene, keep this habit
 
 ---
 
-## DEC-08 — Single-layer mart thay vì dual-layer (base + analysis)
+## DEC-08 — Single-layer mart instead of dual-layer (base + analysis)
 
 - **Status:** Accepted
-- **Date:** Phase 3, Bước 1
+- **Date:** Phase 3, Step 1
 - **Phase:** 3 (POL-9)
 
 **Context:**
-Ban đầu có đề xuất 2-layer: `mart_ab_test_base` (đầy đủ flag, không filter) + `mart_ab_test_analysis` (đã filter theo policy). Cho phép sensitivity analysis "kết quả có đổi không nếu include/exclude outlier?".
+Initially there was a proposal for 2 layers: `mart_ab_test_base` (full flags, no filter) + `mart_ab_test_analysis` (filtered per policy). This would allow a sensitivity analysis: "does the result change if we include/exclude the outlier?".
 
 **Decision:**
-Chốt 1 layer duy nhất: `cookie_cats.mart_ab_test_base` (đã apply toàn bộ policy).
+Settle on a single layer: `cookie_cats.mart_ab_test_base` (with all policies applied).
 
 **Rationale:**
-- Với scope Cookie Cats (1 outlier duy nhất bị loại), sensitivity analysis không justify overhead 2 layer
-- Nếu cần sensitivity, có thể tạm thời rebuild `mart` với policy khác trong Phase 4 rồi rollback
-- Đơn giản hơn cho Power BI: 1 source of truth, 1 dataset
+- For the Cookie Cats scope (only 1 outlier excluded), a sensitivity analysis does not justify the overhead of 2 layers
+- If sensitivity is needed, the `mart` can be temporarily rebuilt with a different policy in Phase 4 and then rolled back
+- Simpler for Power BI: 1 source of truth, 1 dataset
 
 **Alternatives considered:**
-- 2-layer: robust hơn cho sensitivity analysis, phù hợp scope enterprise
-- 0-layer (query raw trực tiếp mỗi lần): không repeatable, không có audit trail
+- 2-layer: more robust for sensitivity analysis, suited to an enterprise scope
+- 0-layer (query raw directly each time): not repeatable, no audit trail
 
 **Tradeoffs:**
-- Đánh đổi: mất khả năng nhanh chóng compare "kết quả với vs không outlier"
-- Được: simplicity, dễ maintain, downstream clarity
+- Trade-off: loses the ability to quickly compare "result with vs without outlier"
+- Gain: simplicity, easy to maintain, downstream clarity
 
 **Consequences:**
-- Nếu Phase 4 muốn sensitivity check outlier impact, cần rebuild mart tạm — plan into Phase 4 timeline nếu cần
+- If Phase 4 wants a sensitivity check of the outlier's impact, a temporary mart rebuild is needed — plan into the Phase 4 timeline if required
 
 ---
 
-## DEC-09 — Method cho retention hypothesis test (Phase 4, Group 1)
+## DEC-09 — Method for the retention hypothesis test (Phase 4, Group 1)
 
 - **Status:** Accepted
 - **Date:** Phase 4
 - **Phase:** 4 (Group 1)
 
 **Context:**
-Cần chốt phương pháp kiểm định H0₁ (D1) và H0₂ (D7) cho biến retention binary, và cách đọc kết quả ở n = 90K nơi mọi thứ dễ statistically significant.
+A method must be fixed for testing H0₁ (D1) and H0₂ (D7) for the binary retention variable, and how to read the result at n = 90K where everything is easily statistically significant.
 
 **Decision:**
-Dùng **Chi-square test of independence** (report cả có/không Yates correction) làm test chính, kèm **Cohen's h** (effect size) và **95% CI cho difference of proportions** (Wald), đọc dưới ngưỡng **Bonferroni α = 0.0167** (3 test đồng thời). Đặt effect size và CI **ngang hàng** với p-value khi kết luận.
+Use the **Chi-square test of independence** (report both with/without Yates correction) as the main test, together with **Cohen's h** (effect size) and a **95% CI for the difference of proportions** (Wald), read under the **Bonferroni α = 0.0167** threshold (3 simultaneous tests). Place effect size and CI **on equal footing** with the p-value when concluding.
 
 **Rationale:**
-- retention là binary + version categorical → χ² test of independence đúng bản chất; ở bảng 2×2 tương đương z-test-of-two-proportions (χ² = z²).
-- Ở n lớn, p-value gần như luôn nhỏ → phải dùng effect size + CI để tách statistical vs practical significance. Cohen's h là chuẩn cho difference of proportions.
-- 3 test đồng thời → Bonferroni chống false positive; cost false positive cao (recommendation sản phẩm thật) nên chấp nhận sự conservative.
+- Retention is binary + version is categorical → the χ² test of independence fits the nature of the data; for a 2×2 table it is equivalent to the z-test of two proportions (χ² = z²).
+- At large n, the p-value is almost always small → effect size + CI must be used to separate statistical vs practical significance. Cohen's h is the standard for a difference of proportions.
+- 3 simultaneous tests → Bonferroni guards against false positives; the cost of a false positive is high (a real product recommendation) so its conservatism is accepted.
 
 **Alternatives considered:**
-- t-test 2-sample: sai giả định cho biến Bernoulli, kém chuẩn hơn χ².
-- Chỉ report p-value: nguy hiểm ở n lớn — dễ tuyên bố "significant" cho khác biệt tí hon.
-- Không correction: rủi ro false positive khi chạy nhiều test.
+- 2-sample t-test: wrong assumption for a Bernoulli variable, less standard than χ².
+- Report only the p-value: dangerous at large n — easy to declare "significant" for a tiny difference.
+- No correction: risk of false positives when running many tests.
 
 **Tradeoffs:**
-- Đánh đổi: Bonferroni conservative → có thể bỏ sót hiệu ứng thật nhỏ. Chấp nhận vì ưu tiên chắc chắn.
-- Được: kết luận robust, phân biệt rõ "significant" vs "đáng deploy".
+- Trade-off: Bonferroni is conservative → may miss a truly small effect. Accepted because certainty is prioritized.
+- Gain: robust conclusions, clearly distinguishing "significant" vs "worth deploying".
 
 **Consequences:**
-- Kết quả G1: D1 **không** bác bỏ H0₁ (p≈0.075, CI chứa 0); D7 **bác bỏ** H0₂ (p≈0.0016 < 0.0167, CI ⊂ (−∞,0)), gate_40 giảm ~4.3% relative.
-- Effect size (Cohen's h ≈ −0.02) rất nhỏ → magnitude/user bé, nhưng ở scale lớn vẫn đáng tiền → nối sang G4.
-- Method này áp cho mọi so sánh proportion downstream (kể cả segment G3).
+- Result G1: D1 does **not** reject H0₁ (p≈0.075, CI contains 0); D7 **rejects** H0₂ (p≈0.0016 < 0.0167, CI ⊂ (−∞,0)), gate_40 drops ~4.3% relative.
+- Effect size (Cohen's h ≈ −0.02) is very small → tiny magnitude/user, but at large scale it is still worth money → carries over to G4.
+- This method applies to every downstream proportion comparison (including segment G3).
 
 ---
 
-## DEC-10 — Method cho engagement test (Phase 4, Group 2)
+## DEC-10 — Method for the engagement test (Phase 4, Group 2)
 
 - **Status:** Accepted
 - **Date:** Phase 4
 - **Phase:** 4 (Group 2)
 
 **Context:**
-`sum_gamerounds` lệch phải mạnh (median ~16-17 nhưng mean ~51 do đuôi dài), nên t-test/mean-based không phù hợp. Cần chốt method kiểm định H0₃ và cách lấy CI cho khác biệt median.
+`sum_gamerounds` is strongly right-skewed (median ~16-17 but mean ~51 due to the long tail), so a t-test/mean-based method is unsuitable. A method must be fixed for testing H0₃ and how to obtain the CI for the median difference.
 
 **Decision:**
-Dùng **Mann-Whitney U** (non-parametric, phù hợp phân phối lệch) làm test chính, effect size **rank-biserial**, và **bootstrap 10,000-resample** (seed = 42) cho 95% CI của median difference. Đọc dưới Bonferroni α = 0.0167.
+Use **Mann-Whitney U** (non-parametric, suited to a skewed distribution) as the main test, effect size **rank-biserial**, and a **10,000-resample bootstrap** (seed = 42) for the 95% CI of the median difference. Read under Bonferroni α = 0.0167.
 
 **Rationale:**
-- Median + non-parametric robust với right-skew, không bị outlier đuôi kéo.
-- Bootstrap cho CI của median difference mà không cần giả định phân phối.
-- Seed cố định (42) đảm bảo reproducibility.
+- Median + non-parametric is robust to right-skew, not dragged by tail outliers.
+- Bootstrap gives a CI for the median difference without distributional assumptions.
+- A fixed seed (42) ensures reproducibility.
 
 **Alternatives considered:**
-- t-test 2-sample trên mean: sai giả định với phân phối lệch, mean bị outlier chi phối.
-- Log-transform rồi t-test: khó diễn giải business (đơn vị log-rounds).
+- 2-sample t-test on the mean: wrong assumption for a skewed distribution, the mean is dominated by outliers.
+- Log-transform then t-test: hard to interpret for business (units of log-rounds).
 
 **Tradeoffs:**
-- Đánh đổi: median ít "nhạy" hơn mean với dịch chuyển đuôi. Chấp nhận vì engagement điển hình đọc theo median.
-- Được: kết luận robust, CI không phụ thuộc giả định normal.
+- Trade-off: the median is less "sensitive" than the mean to tail shifts. Accepted because engagement is typically read via the median.
+- Gain: robust conclusions, a CI that does not depend on a normality assumption.
 
 **Consequences:**
-- Kết quả G2: median 17 (gate_30) vs 16 (gate_40); Mann-Whitney p ≈ 0.0509; rank-biserial r ≈ −0.0075 (cực nhỏ); bootstrap CI median diff = [−1.00; 0.00] **chứa 0** → **không** bác bỏ H0₃. Engagement hai nhóm thực chất bằng nhau.
-- Kết luận này là mấu chốt của recommendation: gate_40 không có upside engagement để bù cho retention D7 bị mất.
+- Result G2: median 17 (gate_30) vs 16 (gate_40); Mann-Whitney p ≈ 0.0509; rank-biserial r ≈ −0.0075 (extremely small); bootstrap CI of the median diff = [−1.00; 0.00] **contains 0** → does **not** reject H0₃. The engagement of the two groups is essentially equal.
+- This conclusion is the crux of the recommendation: gate_40 has no engagement upside to offset the lost D7 retention.
 
 ---
 
-## DEC-11 — Segment analysis (HTE) theo engagement bucket & lưu ý số heavy
+## DEC-11 — Segment analysis (HTE) by engagement bucket & note on the heavy count
 
 - **Status:** Accepted (with open item)
 - **Date:** Phase 4 (Group 3)
 - **Phase:** 4 (Group 3)
 
 **Context:**
-Hiệu ứng D7 trung bình (−0.82pp) có thể che giấu heterogeneity. Cần kiểm tra tác động có đồng đều giữa light/medium/heavy không (Heterogeneous Treatment Effect).
+The average D7 effect (−0.82pp) may hide heterogeneity. It needs to be checked whether the impact is uniform across light/medium/heavy (Heterogeneous Treatment Effect).
 
 **Decision:**
-Chạy chi-square retention D7 trong từng nhóm engagement (dùng bucket chung từ DEC-04), đọc theo **pattern** (hướng + độ lớn + đơn điệu) thay vì tuyên bố cứng từng ô — vì cỡ mẫu mỗi nhóm nhỏ hơn, p-value từng ô kém ổn định.
+Run a chi-square on D7 retention within each engagement group (using the common bucket from DEC-04), reading by **pattern** (direction + magnitude + monotonicity) rather than hard claims per cell — because each group's sample size is smaller and per-cell p-values are less stable.
 
 **Rationale:**
-- Segment insight là thứ Game Designer cần nhất; pattern đơn điệu có giá trị hơn p-value lẻ.
-- Đọc theo pattern tránh over-claim ở từng ô cỡ mẫu nhỏ.
+- Segment insight is what the Game Designer needs most; a monotonic pattern is more valuable than an isolated p-value.
+- Reading by pattern avoids over-claiming in each small-sample cell.
 
 **Consequences:**
-- Kết quả: light +0.11pp (p=0.44) → gần như không đổi; medium −0.63pp (p=0.043); heavy −1.27pp (p=0.029). Pattern đơn điệu light→medium→heavy khớp cơ chế: người chơi light rời trước khi chạm gate; medium/heavy mới chịu tác động comeback-habit.
-- **Open item (cần đối chiếu):** Biểu đồ `phase4_g3_segment_d7.png` hiển thị nhãn heavy 47.2% vs 46.4% (≈ −0.8pp), lệch so với con số −1.27pp trong text. Chênh quá xa để chỉ do làm tròn → nghi khác biệt định nghĩa bucket heavy giữa chart và phần tính delta. Hướng và thứ tự vẫn đúng, không đổi kết luận, nhưng cần đối chiếu lại `notebook phase4_03_segment_analysis` để chốt con số heavy chuẩn trước khi phát hành ra ngoài. Xuân Quang đã quyết định giữ nguyên và ghi nhận ở Phase 7 (không block delivery).
+- Result: light +0.11pp (p=0.44) → virtually unchanged; medium −0.63pp (p=0.043); heavy −1.27pp (p=0.029). The monotonic pattern light→medium→heavy matches the mechanism: light players leave before reaching the gate; only medium/heavy players feel the comeback-habit effect.
+- **Open item (needs reconciliation):** The chart `phase4_g3_segment_d7.png` shows the heavy label as 47.2% vs 46.4% (≈ −0.8pp), differing from the −1.27pp figure in the text. Too far apart to be mere rounding → suspect a difference in the heavy bucket definition between the chart and the delta computation. The direction and order are still correct and do not change the conclusion, but the notebook `phase4_03_segment_analysis` should be reconciled to fix the definitive heavy figure before external release. Xuân Quang decided to keep it as-is and noted it in Phase 7 (does not block delivery).
 
 ---
 
-## DEC-12 — Business impact bằng proxy retention D7 + benchmark ARPDAU
+## DEC-12 — Business impact via D7 retention proxy + ARPDAU benchmark
 
 - **Status:** Accepted
 - **Date:** Phase 4 (Group 4), reconfirmed Phase 6
 - **Phase:** 4 → 6
 
 **Context:**
-Dataset không chứa doanh thu (ngoài scope), nhưng success criteria yêu cầu business impact bằng con số. Cần một cách quy retention delta ra tiền mà minh bạch và defensible.
+The dataset contains no revenue (out of scope), but the success criteria require a quantified business impact. A transparent and defensible way to convert the retention delta into money is needed.
 
 **Decision:**
-Dùng retention D7 làm **proxy** cho stickiness/LTV. Quy đổi: Số user D7 mất/tháng = Installs × |ΔD7|; giá trị mỗi user = **LTV proxy = ARPDAU × số ngày hoạt động ước tính**. Ở Phase 4 để ARPDAU dưới dạng **tham số**; ở Phase 6 chốt **benchmark ARPDAU = $0.10** (puzzle casual) và LTV proxy ≈ $3.00/user (≈ 30 ngày hoạt động), chạy bảng sensitivity theo quy mô traffic.
+Use D7 retention as a **proxy** for stickiness/LTV. Conversion: D7 users lost/month = Installs × |ΔD7|; value per user = **LTV proxy = ARPDAU × estimated active days**. In Phase 4, leave ARPDAU as a **parameter**; in Phase 6 fix the **ARPDAU benchmark = $0.10** (casual puzzle) and LTV proxy ≈ $3.00/user (≈ 30 active days), running a sensitivity table by traffic scale.
 
 **Rationale:**
-- Không có revenue thật → phải dùng proxy; retention D7 là proxy stickiness chuẩn ngành.
-- Để ARPDAU là tham số giúp đội ngũ thay số thật vào; benchmark $0.10 chỉ để minh họa con số cho case study học tập.
-- Minh bạch giả định > giả vờ chính xác.
+- No real revenue → a proxy must be used; D7 retention is an industry-standard stickiness proxy.
+- Leaving ARPDAU as a parameter lets the team plug in real numbers; the $0.10 benchmark only illustrates a figure for a learning case study.
+- Transparent assumptions > pretending precision.
 
 **Alternatives considered:**
-- Không quy ra tiền, chỉ report % : đúng nhưng không đáp ứng success criteria "impact bằng số".
-- Mô hình LTV đầy đủ: bất khả thi vì chỉ có D1/D7, không có đường cong retention dài hạn.
+- Not converting to money, reporting only % : correct but does not meet the "quantified impact" success criterion.
+- A full LTV model: infeasible because only D1/D7 exist, no long-term retention curve.
 
 **Tradeoffs:**
-- Đánh đổi: con số USD là illustrative, không phải đo trực tiếp — phải kèm caveat rõ.
-- Được: stakeholder phi kỹ thuật có "cảm giác" về độ lớn tác động.
+- Trade-off: the USD figure is illustrative, not a direct measurement — must include a clear caveat.
+- Gain: non-technical stakeholders get a "feel" for the magnitude of the impact.
 
 **Consequences:**
-- Con số chốt (ARPDAU $0.10): ~818 user D7 mất/tháng trên mỗi 100K installs ≈ $2,454/tháng ≈ $29,448/năm, tuyến tính theo traffic.
-- Mọi deliverable phải ghi rõ đây là proxy dựa trên benchmark, không phải doanh thu đo trực tiếp.
+- Fixed figures (ARPDAU $0.10): ~818 D7 users lost/month per 100K installs ≈ $2,454/month ≈ $29,448/year, linear with traffic.
+- Every deliverable must clearly state this is a benchmark-based proxy, not directly measured revenue.
 
 ---
 
-## DEC-13 — Bỏ Power BI dashboard (Phase 5), report thay thế
+## DEC-13 — Drop the Power BI dashboard (Phase 5), report as replacement
 
 - **Status:** Accepted
-- **Date:** Phase 7 (chốt lại scope Phase 5)
+- **Date:** Phase 7 (re-scoping Phase 5)
 - **Phase:** 5 → 7
 
 **Context:**
-Roadmap ban đầu có Phase 5 build Power BI dashboard cho Product team. Tuy nhiên đây là A/B test **đã kết thúc trên dữ liệu tĩnh** — số liệu sẽ không được cập nhật trong tương lai.
+The original roadmap had Phase 5 building a Power BI dashboard for the Product team. However, this is an A/B test that has **already ended on static data** — the numbers will not be updated in the future.
 
 **Decision:**
-Không build dashboard `.pbix`. Dùng report Word (Phase 4 + Phase 6) và executive 1-slide làm deliverable trực quan thay thế.
+Do not build a `.pbix` dashboard. Use the Word reports (Phase 4 + Phase 6) and the executive 1-slide as the replacement visual deliverables.
 
 **Rationale:**
-- Dashboard tạo giá trị khi data được refresh định kỳ và cần theo dõi liên tục. Với dữ liệu tĩnh đã đóng, dashboard là overhead thừa — không ai "monitor" một thử nghiệm đã xong.
-- Report tĩnh (charts nhúng + diễn giải) truyền tải đủ insight cho mọi stakeholder trong case study này.
+- A dashboard creates value when data is refreshed periodically and needs continuous monitoring. With closed static data, a dashboard is unnecessary overhead — nobody "monitors" a finished experiment.
+- A static report (embedded charts + interpretation) conveys enough insight for every stakeholder in this case study.
 
 **Alternatives considered:**
-- Build dashboard cho có: tốn công, không tạo giá trị theo dõi thực.
-- HTML mockup dashboard: cân nhắc nhưng report đã đủ, tránh trùng lặp.
+- Build a dashboard for the sake of it: effortful, creates no real monitoring value.
+- An HTML mockup dashboard: considered, but the report is already sufficient, avoiding duplication.
 
 **Tradeoffs:**
-- Đánh đổi: mất phần trình diễn interactive; thiếu 1 deliverable "đẹp mắt" cho portfolio.
-- Được: tập trung công sức vào chất lượng report + recommendation.
+- Trade-off: loses the interactive presentation piece; missing one "eye-catching" deliverable for a portfolio.
+- Gain: focus effort on the quality of the report + recommendation.
 
 **Consequences:**
-- Deliverables cuối gồm: SQL scripts, notebooks (Phase 2, 4), reports Word (Phase 2/3/4/6), project closeout doc, executive 1-slide (HTML). Không có `.pbix`.
-- Nếu sau này có phiên bản A/B test live (data refresh), cân nhắc build dashboard lúc đó.
+- The final deliverables include: SQL scripts, notebooks (Phase 2, 4), Word reports (Phase 2/3/4/6), the project closeout doc, the executive 1-slide (HTML). No `.pbix`.
+- If a live A/B test version (data refresh) exists later, consider building a dashboard then.
 
 ---
 
-## Ghi chú
+## Notes
 
-- File này sẽ tiếp tục được cập nhật ở Phase 4-7 với các decisions mới (VD threshold cho hypothesis test, choice giữa parametric vs bootstrap, business impact estimation methodology).
-- Khi 1 decision bị superseded, giữ nguyên entry cũ và mark `Status: Superseded by DEC-XX`, không delete. Lịch sử tư duy quan trọng bằng conclusion.
+- This file will continue to be updated in Phases 4-7 with new decisions (e.g. the hypothesis test threshold, the choice between parametric vs bootstrap, the business impact estimation methodology).
+- When a decision is superseded, keep the old entry and mark `Status: Superseded by DEC-XX`, do not delete. The history of reasoning is as important as the conclusion.
